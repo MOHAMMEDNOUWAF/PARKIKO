@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/widgets/parkiko_logo.dart';
+import '../services/firebase_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -40,10 +41,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleSignIn() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
+    final authService = FirebaseAuthService();
+    final success = await authService.signInWithIdentifier(
+      identifier: _userIdController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
     if (mounted) {
       setState(() => _isLoading = false);
-      widget.onLoginSuccess();
+      if (success) {
+        widget.onLoginSuccess();
+      }
     }
   }
 

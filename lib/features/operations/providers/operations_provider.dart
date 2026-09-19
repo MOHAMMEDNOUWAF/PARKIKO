@@ -1,17 +1,48 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/valet_ticket.dart';
+import '../services/firestore_operations_repository.dart';
 import '../../../core/widgets/hud_chip.dart';
 
 final operationsFilterProvider = StateProvider<String>((ref) => 'all');
 final searchQueryProvider = StateProvider<String>((ref) => '');
 final selectedSiteProvider = StateProvider<String>((ref) => 'All Sites (4 Properties)');
 
-final valetTicketsProvider = StateNotifierProvider<ValetTicketsNotifier, List<ValetTicket>>((ref) {
-  return ValetTicketsNotifier();
+final valetTicketsProvider =
+    StateNotifierProvider<ValetTicketsNotifier, List<ValetTicket>>((ref) {
+  final repository = ref.watch(firestoreOperationsRepositoryProvider);
+  return ValetTicketsNotifier(repository);
 });
 
 class ValetTicketsNotifier extends StateNotifier<List<ValetTicket>> {
-  ValetTicketsNotifier() : super(_initialSampleTickets);
+  final FirestoreOperationsRepository? _repository;
+  StreamSubscription<List<ValetTicket>>? _subscription;
+
+  ValetTicketsNotifier([this._repository]) : super(_initialSampleTickets) {
+    _initFirestoreSync();
+  }
+
+  void _initFirestoreSync() {
+    final repo = _repository;
+    if (repo != null && repo.isConnected) {
+      repo.seedIfEmpty(_initialSampleTickets);
+
+      _subscription = repo.streamTickets().listen(
+        (remoteTickets) {
+          if (remoteTickets.isNotEmpty) {
+            state = remoteTickets;
+          }
+        },
+        onError: (_) {},
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   static final List<ValetTicket> _initialSampleTickets = [
     ValetTicket(
@@ -120,9 +151,15 @@ class ValetTicketsNotifier extends StateNotifier<List<ValetTicket>> {
 
   void addTicket(ValetTicket ticket) {
     state = [ticket, ...state];
+    _repository?.addTicket(ticket);
   }
 
-  void updateTicketStatus(String id, OperationalStatus status, String statusText, {String? newSlot}) {
+  void updateTicketStatus(
+    String id,
+    OperationalStatus status,
+    String statusText, {
+    String? newSlot,
+  }) {
     state = [
       for (final ticket in state)
         if (ticket.id == id)
@@ -130,11 +167,14 @@ class ValetTicketsNotifier extends StateNotifier<List<ValetTicket>> {
             status: status,
             statusText: statusText,
             locationSlot: newSlot,
-            checkOutTime: status == OperationalStatus.available ? DateTime.now() : ticket.checkOutTime,
+            checkOutTime: status == OperationalStatus.available
+                ? DateTime.now()
+                : ticket.checkOutTime,
           )
         else
           ticket,
     ];
+    _repository?.updateTicketStatus(id, status, statusText, newSlot: newSlot);
   }
 
   void markPaid(String id) {
@@ -142,6 +182,7 @@ class ValetTicketsNotifier extends StateNotifier<List<ValetTicket>> {
       for (final ticket in state)
         if (ticket.id == id) ticket.copyWith(isPaid: true) else ticket,
     ];
+    _repository?.markTicketPaid(id);
   }
 }
 
@@ -164,7 +205,9 @@ final filteredTicketsProvider = Provider<List<ValetTicket>>((ref) {
     }
 
     // Site filter
-    if (site != 'All Sites (4 Properties)' && !ticket.siteName.contains(site) && !ticket.siteShort.contains(site)) {
+    if (site != 'All Sites (4 Properties)' &&
+        !ticket.siteName.contains(site) &&
+        !ticket.siteShort.contains(site)) {
       return false;
     }
 
