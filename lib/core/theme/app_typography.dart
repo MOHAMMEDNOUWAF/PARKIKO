@@ -2,54 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Tactical Dispatch HUD Typography
-/// Prioritizes machine-readability, instant outdoor scanning, and tabular numerals.
+/// Google Stitch Typography System (Inter)
+/// 1:1 Specifications from Stitch parkiko1 project
 class AppTypography {
   AppTypography._();
 
-  // Display Typography (Space Grotesk)
-  static TextStyle displayLarge = GoogleFonts.spaceGrotesk(
+  // Display Typography (Inter)
+  static TextStyle displayLarge = GoogleFonts.inter(
     fontSize: 48,
     fontWeight: FontWeight.w700,
     height: 52 / 48,
-    letterSpacing: -1.92, // -0.04em
-    color: AppColors.textHighLuminance,
+    letterSpacing: -0.96,
+    color: AppColors.onSurface,
   );
 
-  static TextStyle displayLargeMobile = GoogleFonts.spaceGrotesk(
+  static TextStyle displayLargeMobile = GoogleFonts.inter(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     height: 36 / 32,
-    letterSpacing: -0.96, // -0.03em
-    color: AppColors.textHighLuminance,
+    letterSpacing: -0.64,
+    color: AppColors.onSurface,
   );
 
-  // Headlines (Space Grotesk)
-  static TextStyle headlineLarge = GoogleFonts.spaceGrotesk(
+  // Headlines (Inter)
+  static TextStyle headlineLarge = GoogleFonts.inter(
     fontSize: 32,
     fontWeight: FontWeight.w600,
     height: 40 / 32,
-    letterSpacing: -0.64, // -0.02em
+    letterSpacing: -0.48,
     color: AppColors.onSurface,
   );
 
-  static TextStyle headlineLargeMobile = GoogleFonts.spaceGrotesk(
+  static TextStyle headlineLargeMobile = GoogleFonts.inter(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     height: 30 / 24,
-    letterSpacing: -0.48, // -0.02em
+    letterSpacing: -0.24,
     color: AppColors.onSurface,
   );
 
-  static TextStyle headlineMedium = GoogleFonts.spaceGrotesk(
+  static TextStyle headlineMedium = GoogleFonts.inter(
     fontSize: 22,
     fontWeight: FontWeight.w600,
     height: 28 / 22,
-    letterSpacing: -0.22, // -0.01em
+    letterSpacing: -0.22,
     color: AppColors.onSurface,
   );
 
-  static TextStyle headlineSmall = GoogleFonts.spaceGrotesk(
+  static TextStyle headlineSmall = GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     height: 24 / 18,
@@ -57,16 +57,16 @@ class AppTypography {
     color: AppColors.onSurface,
   );
 
-  // Titles (Space Grotesk)
-  static TextStyle titleMedium = GoogleFonts.spaceGrotesk(
+  // Titles (Inter)
+  static TextStyle titleMedium = GoogleFonts.inter(
     fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     height: 22 / 16,
-    letterSpacing: 0.32, // 0.02em
+    letterSpacing: 0,
     color: AppColors.onSurface,
   );
 
-  // Body Typography (Inter / Geist)
+  // Body Typography (Inter)
   static TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
@@ -79,7 +79,7 @@ class AppTypography {
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 20 / 14,
-    letterSpacing: 0.14, // 0.01em
+    letterSpacing: 0.14,
     color: AppColors.onSurfaceVariant,
   );
 
@@ -87,44 +87,44 @@ class AppTypography {
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 16 / 12,
-    letterSpacing: 0.24, // 0.02em
+    letterSpacing: 0.24,
     color: AppColors.onSurfaceVariant,
   );
 
-  // Labels & Telemetry Readouts (Uppercase & Tracked)
+  // Labels (Inter)
   static TextStyle labelLarge = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 18 / 14,
-    letterSpacing: 0.84, // 0.06em
+    letterSpacing: 0.14,
     color: AppColors.onSurface,
   );
 
   static TextStyle labelMedium = GoogleFonts.inter(
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
-    height: 14 / 11,
-    letterSpacing: 0.88, // 0.08em
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    height: 16 / 12,
+    letterSpacing: 0.24,
     color: AppColors.onSurfaceVariant,
   );
 
   static TextStyle labelSmall = GoogleFonts.inter(
-    fontSize: 9,
-    fontWeight: FontWeight.w700,
-    height: 12 / 9,
-    letterSpacing: 1.08, // 0.12em
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    height: 14 / 11,
+    letterSpacing: 0.44,
     color: AppColors.onSurfaceVariant,
   );
 
   // High-Precision License Plate & Telemetry Numbers
-  static TextStyle licensePlate = GoogleFonts.spaceGrotesk(
-    fontSize: 15,
+  static TextStyle licensePlate = GoogleFonts.inter(
+    fontSize: 14,
     fontWeight: FontWeight.w700,
-    letterSpacing: 1.5,
-    color: AppColors.groundZero,
+    letterSpacing: 1.2,
+    color: AppColors.onSurface,
   );
 
-  static TextStyle telemetryTimer = GoogleFonts.spaceGrotesk(
+  static TextStyle telemetryTimer = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.5,

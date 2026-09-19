@@ -29,10 +29,9 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
   void _showTicketDetails(ValetTicket ticket) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.hudOverlay,
+      backgroundColor: AppColors.surfaceContainerLowest,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(color: AppColors.secondaryContainer, width: 2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return Padding(
@@ -41,17 +40,32 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant.withAlpha(150),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    color: AppColors.groundZero,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0x66BEC9C2), width: 1),
+                    ),
                     child: Text(
                       ticket.licensePlate,
                       style: AppTypography.licensePlate.copyWith(
-                        color: AppColors.textHighLuminance,
-                        fontSize: 16,
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -61,7 +75,11 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               const SizedBox(height: 12),
               Text(
                 '${ticket.carModel} (${ticket.color})',
-                style: AppTypography.headlineSmall.copyWith(color: AppColors.textHighLuminance),
+                style: AppTypography.titleMedium.copyWith(
+                  color: AppColors.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -71,14 +89,17 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
-                color: AppColors.groundZero,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Location / Bay Slot:', style: AppTypography.labelMedium),
+                    Text('Location / Bay Slot:', style: AppTypography.labelMedium.copyWith(color: AppColors.onSurfaceVariant)),
                     Text(
                       ticket.locationSlot,
-                      style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
+                      style: AppTypography.labelLarge.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -87,7 +108,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               // Action Buttons
               if (ticket.status == OperationalStatus.occupied) ...[
                 HudButton(
-                  text: 'RETRIEVE TO PORCH LANE',
+                  text: 'Retrieve to Porch Lane',
                   icon: Icons.directions_car,
                   variant: HudButtonVariant.primary,
                   onPressed: () {
@@ -101,7 +122,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('${ticket.licensePlate} dispatched to Porch Lane'),
-                        backgroundColor: AppColors.cardModule,
+                        backgroundColor: AppColors.primary,
                       ),
                     );
                   },
@@ -109,7 +130,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                 const SizedBox(height: 10),
               ] else if (ticket.status == OperationalStatus.available) ...[
                 HudButton(
-                  text: 'MARK HANDED OVER (COMPLETED)',
+                  text: 'Mark Handed Over (Completed)',
                   icon: Icons.check_circle_outline,
                   variant: HudButtonVariant.primary,
                   onPressed: () {
@@ -126,7 +147,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               ],
               // WhatsApp dispatch button
               HudButton(
-                text: 'SEND WHATSAPP TICKET',
+                text: 'Send WhatsApp Digital Slip',
                 icon: Icons.send,
                 variant: HudButtonVariant.secondary,
                 onPressed: () {
@@ -134,11 +155,66 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('WhatsApp receipt sent to ${ticket.customerPhone}'),
-                      backgroundColor: AppColors.statusWhatsApp.withAlpha(200),
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSiteSelector() {
+    final sites = [
+      'All Sites (4 Properties)',
+      'Aerocity Grand (Terminal T2)',
+      'CyberHub Plaza (Deck A)',
+      'South City Mall (Porch B)',
+      'St. Regis Hotel (VIP Deck)',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainerLowest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant.withAlpha(150),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Select Operations Site',
+                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              for (final site in sites)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.domain, color: AppColors.primary),
+                  title: Text(site, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+                  onTap: () {
+                    ref.read(selectedSiteProvider.notifier).state = site.split('(')[0].trim();
+                    Navigator.pop(ctx);
+                  },
+                ),
             ],
           ),
         );
@@ -162,42 +238,55 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         titleSpacing: 16,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        scrolledUnderElevation: 0,
+        backgroundColor: AppColors.surface,
+        title: Row(
           children: [
-            Row(
+            const ParkikoLogo(size: 30),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ParkikoLogo(size: 22),
-                const SizedBox(width: 8),
+                Row(
+                  children: [
+                    Text(
+                      'Parkiko',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
                 Text(
-                  'PARKIKO',
-                  style: AppTypography.titleMedium.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,
-                    color: AppColors.primary,
+                  '$currentSite • 58 Active in Network',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 10,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(width: 6, height: 6, color: AppColors.statusAvailable),
               ],
-            ),
-            Text(
-              '$currentSite • $totalCount Active in Network',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.sync, color: AppColors.onSurfaceVariant),
+            tooltip: 'Sync Telemetry',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Telemetry synchronized with all terminal decks'),
-                  backgroundColor: AppColors.cardModule,
+                  backgroundColor: AppColors.primary,
                   duration: Duration(seconds: 1),
                 ),
               );
@@ -209,7 +298,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
         children: [
           // Operational Live Context Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -218,20 +307,20 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                   children: [
                     Text(
                       'Live Operations',
-                      style: AppTypography.headlineLargeMobile.copyWith(
-                        color: AppColors.textHighLuminance,
-                        fontWeight: FontWeight.w700,
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(30),
-                        borderRadius: BorderRadius.zero,
-                        border: Border.all(color: AppColors.primary.withAlpha(100), width: 1),
+                        color: AppColors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(9999),
+                        border: Border.all(color: AppColors.primary.withAlpha(50), width: 1),
                       ),
                       child: Text(
-                        'CAPACITY: 74%',
+                        'Network Cap: 74%',
                         style: AppTypography.labelSmall.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -240,14 +329,61 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
+                // Site Selector Chip Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: _showSiteSelector,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0x66BEC9C2), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.domain, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              currentSite.isEmpty ? 'All Sites (4 Properties)' : currentSite,
+                              style: AppTypography.labelMedium.copyWith(
+                                color: AppColors.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.expand_more, size: 14, color: AppColors.outline),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Multi-Site Valet Network',
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.outline, fontSize: 11),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
                 // Search Input with Barcode Trigger
                 Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.groundZero,
-                    borderRadius: BorderRadius.zero,
-                    border: Border.all(color: AppColors.borderSubtle, width: 1),
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x66BEC9C2), width: 1),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0817211D),
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -258,7 +394,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                       Expanded(
                         child: TextField(
                           controller: _searchController,
-                          style: AppTypography.bodyMedium.copyWith(color: AppColors.textHighLuminance),
+                          style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurface),
                           onChanged: (val) => ref.read(searchQueryProvider.notifier).state = val,
                           decoration: InputDecoration(
                             hintText: 'Search ticket #, plate, or customer...',
@@ -279,12 +415,12 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                           },
                         ),
                       IconButton(
-                        icon: const Icon(Icons.qr_code_scanner, size: 18, color: AppColors.statusAvailable),
+                        icon: const Icon(Icons.qr_code_scanner, size: 18, color: AppColors.primary),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Camera barcode scanner active...'),
-                              backgroundColor: AppColors.cardModule,
+                              backgroundColor: AppColors.primary,
                             ),
                           );
                         },
@@ -294,54 +430,62 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                 ),
                 const SizedBox(height: 10),
 
-                // Quick Status Metric Strip (4 cards)
+                // Quick Status Metric Strip (4 clickable cards matching Stitch)
                 Row(
                   children: [
                     Expanded(
                       child: _buildFilterCard(
-                        title: 'ALL',
+                        title: 'Network',
                         count: '$totalCount',
                         subtext: 'Arrived',
                         icon: Icons.directions_car,
                         filterKey: 'all',
                         currentFilter: currentFilter,
-                        color: AppColors.primary,
+                        cardBg: AppColors.surfaceContainerLowest,
+                        cardBorder: currentFilter == 'all' ? AppColors.primary : const Color(0x40BEC9C2),
+                        textColor: AppColors.onSurface,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: _buildFilterCard(
-                        title: 'PARKED',
+                        title: 'Parked',
                         count: '$parkedCount',
                         subtext: 'In Slots',
                         icon: Icons.local_parking,
                         filterKey: 'parked',
                         currentFilter: currentFilter,
-                        color: AppColors.statusOccupied,
+                        cardBg: const Color(0xFFFDE8E8),
+                        cardBorder: currentFilter == 'parked' ? AppColors.error : Colors.transparent,
+                        textColor: AppColors.error,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: _buildFilterCard(
-                        title: 'READY',
+                        title: 'Retrieved',
                         count: '$retrievedCount',
                         subtext: 'At Porch',
                         icon: Icons.car_rental,
                         filterKey: 'retrieved',
                         currentFilter: currentFilter,
-                        color: AppColors.statusAvailable,
+                        cardBg: const Color(0xFFECFDF5),
+                        cardBorder: currentFilter == 'retrieved' ? const Color(0xFF059669) : Colors.transparent,
+                        textColor: const Color(0xFF047857),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: _buildFilterCard(
-                        title: 'DONE',
+                        title: 'Completed',
                         count: '$completedCount',
-                        subtext: 'Released',
+                        subtext: 'Handed Over',
                         icon: Icons.task_alt,
                         filterKey: 'completed',
                         currentFilter: currentFilter,
-                        color: AppColors.secondaryContainer,
+                        cardBg: AppColors.secondaryContainer.withAlpha(90),
+                        cardBorder: currentFilter == 'completed' ? AppColors.primary : Colors.transparent,
+                        textColor: AppColors.onSecondaryContainer,
                       ),
                     ),
                   ],
@@ -350,7 +494,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
             ),
           ),
 
-          // Vehicle Operations Card Feed
+          // Live Operations Vehicle Cards Feed
           Expanded(
             child: tickets.isEmpty
                 ? Center(
@@ -383,34 +527,44 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
     required IconData icon,
     required String filterKey,
     required String currentFilter,
-    required Color color,
+    required Color cardBg,
+    required Color cardBorder,
+    required Color textColor,
   }) {
     final isSelected = currentFilter == filterKey;
     return InkWell(
       onTap: () => ref.read(operationsFilterProvider.notifier).state = filterKey,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: isSelected ? color.withAlpha(40) : AppColors.groundZero,
-          borderRadius: BorderRadius.zero,
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : AppColors.borderSubtle,
+            color: isSelected ? cardBorder : const Color(0x33BEC9C2),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0617211D),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
         ),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 12, color: color),
-                const SizedBox(width: 4),
+                Icon(icon, size: 13, color: textColor),
+                const SizedBox(width: 3),
                 Text(
                   title,
-                  style: AppTypography.labelSmall.copyWith(
-                    color: isSelected ? color : AppColors.outline,
-                    fontWeight: FontWeight.w700,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
                   ),
                 ),
               ],
@@ -418,16 +572,18 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
             const SizedBox(height: 2),
             Text(
               count,
-              style: AppTypography.titleMedium.copyWith(
-                color: isSelected ? AppColors.textHighLuminance : AppColors.onSurface,
+              style: TextStyle(
+                color: textColor,
                 fontWeight: FontWeight.w800,
+                fontSize: 16,
               ),
             ),
             Text(
               subtext,
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.outline,
+              style: TextStyle(
+                color: textColor.withAlpha(180),
                 fontSize: 8,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -437,26 +593,15 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
   }
 
   Widget _buildVehicleCard(ValetTicket ticket) {
-    Color statusColor;
-    if (ticket.status == OperationalStatus.available) {
-      statusColor = AppColors.statusAvailable;
-    } else if (ticket.status == OperationalStatus.occupied) {
-      statusColor = AppColors.statusOccupied;
-    } else {
-      statusColor = AppColors.secondaryContainer;
-    }
-
     final timeFormatter = DateFormat('HH:mm');
 
     return HudCard(
       padding: const EdgeInsets.all(14),
-      leftAccentColor: statusColor,
-      leftAccentWidth: 4,
       onTap: () => _showTicketDetails(ticket),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Plate, Ticket #, Status
+          // Header: Plate tag, Ticket #, Status Pill
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -464,12 +609,17 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    color: AppColors.surfaceContainerHigh,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0x40BEC9C2), width: 1),
+                    ),
                     child: Text(
                       ticket.licensePlate,
                       style: AppTypography.licensePlate.copyWith(
-                        color: AppColors.textHighLuminance,
-                        fontSize: 13,
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -496,7 +646,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               Text(
                 ticket.carModel,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textHighLuminance,
+                  color: AppColors.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -536,10 +686,14 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Location Box
+          // Location Box (Stitch Porch / Assigned bay)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            color: AppColors.groundZero,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x40BEC9C2), width: 1),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -547,34 +701,38 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      color: AppColors.secondaryContainer.withAlpha(40),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                       child: Text(
                         ticket.siteShort,
                         style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.secondaryContainer,
+                          color: AppColors.onSecondaryContainer,
                           fontWeight: FontWeight.w700,
+                          fontSize: 10,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Location:',
-                      style: AppTypography.labelSmall.copyWith(color: AppColors.outline),
+                      ticket.status == OperationalStatus.available ? 'Porch Location:' : 'Assigned Slot:',
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.onSurfaceVariant),
                     ),
                   ],
                 ),
                 Row(
                   children: [
                     Icon(
-                      ticket.status == OperationalStatus.available ? Icons.car_rental : Icons.local_parking,
+                      Icons.location_on,
                       size: 14,
-                      color: statusColor,
+                      color: ticket.status == OperationalStatus.available ? const Color(0xFF059669) : AppColors.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       ticket.locationSlot,
                       style: AppTypography.bodySmall.copyWith(
-                        color: statusColor,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -583,7 +741,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // Footer: Staff & Timestamps
           Row(
@@ -591,7 +749,7 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.badge, size: 14, color: AppColors.primary),
+                  const Icon(Icons.badge, size: 14, color: AppColors.secondary),
                   const SizedBox(width: 4),
                   Text(
                     '${ticket.staffName} (${ticket.staffId})',
@@ -604,12 +762,12 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
               ),
               Row(
                 children: [
-                  const Icon(Icons.schedule, size: 13, color: AppColors.outline),
+                  const Icon(Icons.schedule, size: 13, color: AppColors.primary),
                   const SizedBox(width: 4),
                   Text(
-                    'In: ${timeFormatter.format(ticket.checkInTime)}',
+                    'In: ${timeFormatter.format(ticket.checkInTime)} PM',
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.outline,
+                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],

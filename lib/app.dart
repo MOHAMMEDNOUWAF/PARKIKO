@@ -18,7 +18,7 @@ class _ParkikoAppState extends State<ParkikoApp> {
     return MaterialApp(
       title: 'Parkiko',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: _isAuthenticated
           ? MainShellScreen(
               onLogout: () => setState(() => _isAuthenticated = false),

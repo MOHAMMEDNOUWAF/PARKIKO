@@ -117,6 +117,9 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
+        titleSpacing: 16,
+        scrolledUnderElevation: 0,
+        backgroundColor: AppColors.surface,
         title: Text(
           'Staff & Roster',
           style: AppTypography.titleMedium.copyWith(
@@ -153,7 +156,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                         Text(
                           'Staff Management',
                           style: AppTypography.headlineMedium.copyWith(
-                            color: AppColors.textHighLuminance,
+                            color: AppColors.onSurface,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -164,9 +167,10 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                       ],
                     ),
                     HudButton(
-                      text: '+ ADD STAFF',
+                      text: '+ Add Staff',
                       fullWidth: false,
                       height: 38,
+                      borderRadius: 10,
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -178,16 +182,19 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                 ),
                 const SizedBox(height: 12),
                 // Role filter pills
-                Row(
-                  children: [
-                    _buildRolePill('all', 'ALL (${_staff.length})'),
-                    const SizedBox(width: 6),
-                    _buildRolePill('valet', 'VALETS'),
-                    const SizedBox(width: 6),
-                    _buildRolePill('manager', 'MANAGERS'),
-                    const SizedBox(width: 6),
-                    _buildRolePill('admin', 'LEADS'),
-                  ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildRolePill('all', 'All (${_staff.length})'),
+                      const SizedBox(width: 6),
+                      _buildRolePill('valet', 'Valets'),
+                      const SizedBox(width: 6),
+                      _buildRolePill('manager', 'Managers'),
+                      const SizedBox(width: 6),
+                      _buildRolePill('admin', 'Leads'),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -204,8 +211,6 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: HudCard(
                     padding: const EdgeInsets.all(14),
-                    leftAccentColor: member.isClockedIn ? AppColors.statusAvailable : AppColors.statusOffline,
-                    leftAccentWidth: 4,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -218,7 +223,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                   Text(
                                     member.name,
                                     style: AppTypography.bodyMedium.copyWith(
-                                      color: AppColors.textHighLuminance,
+                                      color: AppColors.onSurface,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -251,12 +256,12 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Icon(Icons.star, size: 13, color: AppColors.tertiary),
+                                  const Icon(Icons.star, size: 13, color: Color(0xFFD97706)),
                                   const SizedBox(width: 3),
                                   Text(
                                     member.rating.toString(),
                                     style: AppTypography.labelSmall.copyWith(
-                                      color: AppColors.tertiary,
+                                      color: const Color(0xFFB45309),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -271,7 +276,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                             HudRoleChip(role: member.role),
                             const SizedBox(height: 8),
                             HudStatusChip(
-                              label: member.isClockedIn ? 'ON SHIFT' : 'OFF DUTY',
+                              label: member.isClockedIn ? 'On Shift' : 'Off Duty',
                               status: member.isClockedIn ? OperationalStatus.available : OperationalStatus.offline,
                             ),
                           ],
@@ -292,21 +297,21 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
     final isSelected = _selectedRoleFilter == roleKey;
     return InkWell(
       onTap: () => setState(() => _selectedRoleFilter = roleKey),
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(9999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer : AppColors.groundZero,
-          borderRadius: BorderRadius.zero,
+          color: isSelected ? AppColors.primary : AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(9999),
           border: Border.all(
-            color: isSelected ? AppColors.borderFocused : AppColors.borderSubtle,
+            color: isSelected ? AppColors.primary : const Color(0x66BEC9C2),
             width: 1,
           ),
         ),
         child: Text(
           label,
           style: AppTypography.labelSmall.copyWith(
-            color: isSelected ? AppColors.textHighLuminance : AppColors.outline,
+            color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),

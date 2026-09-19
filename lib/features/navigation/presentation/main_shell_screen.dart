@@ -39,35 +39,52 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.hudOverlay,
+      backgroundColor: AppColors.surfaceContainerLowest,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(color: AppColors.borderFocused, width: 2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
             left: 20,
             right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant.withAlpha(150),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.add_circle, color: AppColors.statusAvailable, size: 20),
-                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.add_circle, color: AppColors.onSecondaryContainer, size: 20),
+                      ),
+                      const SizedBox(width: 10),
                       Text(
-                        'QUICK VEHICLE INTAKE',
+                        'Quick Vehicle Intake',
                         style: AppTypography.titleMedium.copyWith(
-                          color: AppColors.textHighLuminance,
-                          fontWeight: FontWeight.w800,
+                          color: AppColors.onSurface,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -78,23 +95,23 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               HudTextField(
                 label: 'Vehicle License Plate',
                 controller: plateController,
-                placeholder: 'e.g. DL-01-AB-1234',
+                placeholder: 'e.g. MH-01-DE-4411',
                 hasScannerButton: true,
                 onScanPressed: () {
                   plateController.text = 'MH-04-KB-5500';
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               HudTextField(
                 label: 'Car Model & Color',
                 controller: modelController,
-                placeholder: 'e.g. Mercedes C200 (Black)',
+                placeholder: 'e.g. BMW 330i (Alpine White)',
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -115,14 +132,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               HudTextField(
                 label: 'Assigned Parking Bay',
                 controller: slotController,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               HudButton(
-                text: 'DISPATCH & GENERATE TICKET',
+                text: 'Dispatch & Generate Ticket',
                 icon: Icons.check,
                 onPressed: () {
                   if (plateController.text.trim().isEmpty) {
@@ -156,7 +173,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Vehicle ${newTicket.licensePlate} parked at ${newTicket.locationSlot}!'),
-                      backgroundColor: AppColors.statusAvailable,
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },

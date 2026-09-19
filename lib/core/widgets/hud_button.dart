@@ -3,9 +3,9 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 enum HudButtonVariant {
-  primary,   // Run / Park / Dispatch (Teal + Phosphor Green indicator)
-  secondary, // Tactical action (Dark Slate + Cyan border)
-  critical,  // Reject / Release alert (Crimson)
+  primary,   // Stitch primary mint (#00513A)
+  secondary, // Surface container low (#EBF6EF) + primary text
+  critical,  // Stitch error (#BA1A1A)
   ghost,     // Transparent with border
 }
 
@@ -18,6 +18,7 @@ class HudButton extends StatelessWidget {
   final bool isLoading;
   final double height;
   final bool fullWidth;
+  final double borderRadius;
 
   const HudButton({
     super.key,
@@ -29,6 +30,7 @@ class HudButton extends StatelessWidget {
     this.isLoading = false,
     this.height = 48,
     this.fullWidth = true,
+    this.borderRadius = 12,
   });
 
   @override
@@ -36,99 +38,91 @@ class HudButton extends StatelessWidget {
     Color bg;
     Color border;
     Color fg;
-    Color? stripColor;
 
     switch (variant) {
       case HudButtonVariant.primary:
-        bg = AppColors.primaryContainer;
-        border = AppColors.borderFocused;
-        fg = AppColors.textHighLuminance;
-        stripColor = AppColors.statusAvailable;
+        bg = AppColors.primary;
+        border = Colors.transparent;
+        fg = Colors.white;
         break;
       case HudButtonVariant.secondary:
-        bg = AppColors.cardModule;
-        border = AppColors.borderSubtle;
-        fg = AppColors.onSurface;
-        stripColor = AppColors.secondaryContainer;
+        bg = AppColors.surfaceContainerLow;
+        border = const Color(0x66BEC9C2);
+        fg = AppColors.primary;
         break;
       case HudButtonVariant.critical:
-        bg = const Color(0xFF2A080C);
-        border = AppColors.statusOccupied;
-        fg = const Color(0xFFFF8A80);
-        stripColor = AppColors.statusOccupied;
+        bg = AppColors.error;
+        border = Colors.transparent;
+        fg = Colors.white;
         break;
       case HudButtonVariant.ghost:
         bg = Colors.transparent;
-        border = AppColors.borderSubtle;
+        border = const Color(0x66BEC9C2);
         fg = AppColors.onSurfaceVariant;
-        stripColor = null;
         break;
     }
 
-    final content = Stack(
-      children: [
-        // Left tactical indicator strip
-        if (stripColor != null)
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 4,
-            child: Container(color: stripColor),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: InkWell(
+        onTap: isLoading ? null : onPressed,
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Container(
+          height: height,
+          width: fullWidth ? double.infinity : null,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(color: border, width: 1),
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: variant == HudButtonVariant.primary
+                ? const [
+                    BoxShadow(
+                      color: Color(0x1A00513A),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
-        Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, size: 18, color: fg),
-                      const SizedBox(width: 8),
-                    ],
-                    Flexible(
-                      child: Text(
-                        text.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelLarge.copyWith(
-                          color: fg,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, size: 18, color: fg),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Text(
+                          text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.labelLarge.copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    if (trailingIcon != null) ...[
-                      const SizedBox(width: 8),
-                      Icon(trailingIcon, size: 18, color: fg),
+                      if (trailingIcon != null) ...[
+                        const SizedBox(width: 8),
+                        Icon(trailingIcon, size: 18, color: fg),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
+          ),
         ),
-      ],
-    );
-
-    return InkWell(
-      onTap: isLoading ? null : onPressed,
-      borderRadius: BorderRadius.zero,
-      child: Container(
-        height: height,
-        width: fullWidth ? double.infinity : null,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: bg,
-          border: Border.all(color: border, width: 1),
-          borderRadius: BorderRadius.zero,
-        ),
-        child: content,
       ),
     );
   }

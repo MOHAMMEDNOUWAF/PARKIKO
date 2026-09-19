@@ -51,7 +51,7 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Site "${_siteNameController.text}" configured and deployed!'),
-          backgroundColor: AppColors.statusAvailable,
+          backgroundColor: AppColors.primary,
         ),
       );
       Navigator.pop(context);
@@ -71,9 +71,12 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
+        titleSpacing: 16,
+        scrolledUnderElevation: 0,
+        backgroundColor: AppColors.surface,
         title: Text(
           'Add New Site Setup',
-          style: AppTypography.titleMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800),
+          style: AppTypography.titleMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -85,14 +88,14 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
           // Step Progress Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppColors.groundZero,
+            color: AppColors.surfaceContainerLow,
             child: Row(
               children: [
-                _buildStepIndicator(1, 'SITE INFO'),
-                const Expanded(child: Divider(color: AppColors.borderSubtle)),
-                _buildStepIndicator(2, 'DECKS & SLOTS'),
-                const Expanded(child: Divider(color: AppColors.borderSubtle)),
-                _buildStepIndicator(3, 'STAFF & RATES'),
+                _buildStepIndicator(1, 'Site Info'),
+                const Expanded(child: Divider(color: Color(0x33BEC9C2))),
+                _buildStepIndicator(2, 'Decks & Slots'),
+                const Expanded(child: Divider(color: Color(0x33BEC9C2))),
+                _buildStepIndicator(3, 'Staff & Rates'),
               ],
             ),
           ),
@@ -110,14 +113,14 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
               color: AppColors.surfaceContainerLowest,
-              border: Border(top: BorderSide(color: AppColors.borderSubtle, width: 1)),
+              border: Border(top: BorderSide(color: Color(0x33BEC9C2), width: 1)),
             ),
             child: Row(
               children: [
                 if (_currentStep > 1) ...[
                   Expanded(
                     child: HudButton(
-                      text: 'PREVIOUS',
+                      text: 'Previous',
                       variant: HudButtonVariant.secondary,
                       onPressed: _prevStep,
                     ),
@@ -126,7 +129,7 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
                 ],
                 Expanded(
                   child: HudButton(
-                    text: _currentStep == 3 ? 'FINALIZE & DEPLOY SITE' : 'NEXT STEP',
+                    text: _currentStep == 3 ? 'Finalize & Deploy Site' : 'Next Step',
                     trailingIcon: _currentStep == 3 ? Icons.rocket_launch : Icons.arrow_forward,
                     onPressed: _nextStep,
                   ),
@@ -150,22 +153,21 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
           height: 24,
           decoration: BoxDecoration(
             color: isDone
-                ? AppColors.statusAvailable
+                ? AppColors.primary
                 : isActive
-                    ? AppColors.primaryContainer
+                    ? AppColors.primary
                     : AppColors.surfaceContainer,
-            border: Border.all(
-              color: isActive || isDone ? AppColors.borderFocused : AppColors.borderSubtle,
-            ),
+            shape: BoxShape.circle,
           ),
           child: Center(
             child: isDone
-                ? const Icon(Icons.check, size: 14, color: AppColors.groundZero)
+                ? const Icon(Icons.check, size: 14, color: Colors.white)
                 : Text(
                     '$step',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: isActive ? AppColors.textHighLuminance : AppColors.outline,
+                    style: TextStyle(
+                      color: isActive ? Colors.white : AppColors.outline,
                       fontWeight: FontWeight.w700,
+                      fontSize: 11,
                     ),
                   ),
           ),
@@ -200,9 +202,9 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'STEP 1: PROPERTY IDENTITY',
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.textHighLuminance,
+          'Step 1: Property Identity',
+          style: AppTypography.titleMedium.copyWith(
+            color: AppColors.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -251,9 +253,9 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'STEP 2: DECKS & LAYOUT DYNAMIC',
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.textHighLuminance,
+          'Step 2: Decks & Layout Dynamic',
+          style: AppTypography.titleMedium.copyWith(
+            color: AppColors.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -272,19 +274,19 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
                 count: _deckACapacity,
                 onChanged: (val) => setState(() => _deckACapacity = val),
               ),
-              const Divider(color: AppColors.borderSubtle, height: 24),
+              const Divider(color: Color(0x33BEC9C2), height: 24),
               _buildSlotCounter(
                 title: 'Deck B (Basement Storage)',
                 count: _deckBCapacity,
                 onChanged: (val) => setState(() => _deckBCapacity = val),
               ),
-              const Divider(color: AppColors.borderSubtle, height: 24),
+              const Divider(color: Color(0x33BEC9C2), height: 24),
               _buildSlotCounter(
                 title: 'EV Fast-Charging Bays',
                 count: _evSlots,
                 onChanged: (val) => setState(() => _evSlots = val),
               ),
-              const Divider(color: AppColors.borderSubtle, height: 24),
+              const Divider(color: Color(0x33BEC9C2), height: 24),
               _buildSlotCounter(
                 title: 'VIP Porch Reserved Bays',
                 count: _vipSlots,
@@ -308,31 +310,34 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: AppTypography.bodyMedium.copyWith(color: AppColors.textHighLuminance)),
+            Text(title, style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurface, fontWeight: FontWeight.w600)),
             Text('$count total dedicated slots', style: AppTypography.labelSmall.copyWith(color: AppColors.outline)),
           ],
         ),
         Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.remove, color: AppColors.primary, size: 18),
+              icon: const Icon(Icons.remove, color: AppColors.primary, size: 20),
               onPressed: () {
                 if (count > 0) onChanged(count - 5);
               },
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              color: AppColors.groundZero,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Text(
                 '$count',
                 style: AppTypography.titleMedium.copyWith(
-                  color: AppColors.textHighLuminance,
+                  color: AppColors.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add, color: AppColors.primary, size: 18),
+              icon: const Icon(Icons.add, color: AppColors.primary, size: 20),
               onPressed: () => onChanged(count + 5),
             ),
           ],
@@ -346,9 +351,9 @@ class _AddSiteWizardScreenState extends State<AddSiteWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'STEP 3: TARIFF & ROSTER SETUP',
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.textHighLuminance,
+          'Step 3: Tariff & Roster Setup',
+          style: AppTypography.titleMedium.copyWith(
+            color: AppColors.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),

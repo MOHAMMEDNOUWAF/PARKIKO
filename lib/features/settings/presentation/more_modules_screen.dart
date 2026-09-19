@@ -17,6 +17,9 @@ class MoreModulesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
+        titleSpacing: 16,
+        scrolledUnderElevation: 0,
+        backgroundColor: AppColors.surface,
         title: Text(
           'More Modules & System',
           style: AppTypography.titleMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w800),
@@ -25,7 +28,7 @@ class MoreModulesScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Section: Terminal & Site Operations
+          // Section: Property & Sites
           _buildSectionHeader('PROPERTY & SITES'),
           _buildModuleTile(
             context,
@@ -40,13 +43,13 @@ class MoreModulesScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildModuleTile(
             context,
             title: 'Decks & Stall Allocation',
             subtitle: 'Manage capacity, valet ramps, and VIP slots',
             icon: Icons.grid_view,
-            accentColor: AppColors.secondaryContainer,
+            accentColor: AppColors.secondary,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Terminal 2 Executive Deck layout loaded')),
@@ -55,38 +58,38 @@ class MoreModulesScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Section: Analytics & Intelligence
+          // Section: Analytics & Fleet
           _buildSectionHeader('ANALYTICS & FLEET'),
           _buildModuleTile(
             context,
             title: 'Reports & Financials Dynamic',
             subtitle: 'Revenue curves, turnaround times, and shift audits',
             icon: Icons.bar_chart,
-            accentColor: AppColors.tertiary,
+            accentColor: AppColors.primary,
             onTap: () => _showReportsModal(context),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildModuleTile(
             context,
             title: 'Operations Alerts & Notifications',
             subtitle: 'Ramp congestion alerts, key handovers, and VIP arrivals',
             icon: Icons.notifications_active,
-            accentColor: AppColors.statusAvailable,
+            accentColor: AppColors.secondary,
             onTap: () => _showNotificationsModal(context),
           ),
           const SizedBox(height: 20),
 
-          // Section: Security & System
+          // Section: Settings & Security
           _buildSectionHeader('SETTINGS & SECURITY'),
           _buildModuleTile(
             context,
             title: 'Terminal Settings & Security',
             subtitle: 'Biometric passkeys, offline sync, and role access',
             icon: Icons.security,
-            accentColor: AppColors.statusOccupied,
+            accentColor: AppColors.primary,
             onTap: () => _showSettingsModal(context),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildModuleTile(
             context,
             title: 'WhatsApp Bridge Integration',
@@ -95,9 +98,9 @@ class MoreModulesScreen extends StatelessWidget {
             accentColor: AppColors.statusWhatsApp,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('WhatsApp Cloud API Bridge: Status Connected (200 OK)'),
-                  backgroundColor: AppColors.statusWhatsApp.withAlpha(200),
+                const SnackBar(
+                  content: Text('WhatsApp Cloud API Bridge: Status Connected (200 OK)'),
+                  backgroundColor: AppColors.primary,
                 ),
               );
             },
@@ -107,17 +110,17 @@ class MoreModulesScreen extends StatelessWidget {
           // Logout Card
           HudCard(
             padding: const EdgeInsets.all(14),
-            borderColor: AppColors.statusOccupied.withAlpha(150),
+            borderColor: AppColors.error.withAlpha(80),
             onTap: () => _showLogoutDialog(context),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.logout, color: AppColors.statusOccupied, size: 20),
+                const Icon(Icons.logout, color: AppColors.error, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'SIGN OUT OF TERMINAL',
+                  'Sign Out of Terminal',
                   style: AppTypography.labelLarge.copyWith(
-                    color: AppColors.statusOccupied,
+                    color: AppColors.error,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -132,13 +135,13 @@ class MoreModulesScreen extends StatelessWidget {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
         title,
         style: AppTypography.labelSmall.copyWith(
           color: AppColors.onSurfaceVariant,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.0,
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -154,14 +157,15 @@ class MoreModulesScreen extends StatelessWidget {
   }) {
     return HudCard(
       padding: const EdgeInsets.all(14),
-      leftAccentColor: accentColor,
-      leftAccentWidth: 4,
       onTap: onTap,
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            color: AppColors.groundZero,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Icon(icon, size: 22, color: accentColor),
           ),
           const SizedBox(width: 14),
@@ -172,7 +176,7 @@ class MoreModulesScreen extends StatelessWidget {
                 Text(
                   title,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textHighLuminance,
+                    color: AppColors.onSurface,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -184,7 +188,7 @@ class MoreModulesScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.outline, size: 18),
+          const Icon(Icons.chevron_right, color: AppColors.outline, size: 20),
         ],
       ),
     );
@@ -194,8 +198,10 @@ class MoreModulesScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      backgroundColor: AppColors.surfaceContainerLowest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => DraggableScrollableSheet(
         initialChildSize: 0.8,
         minChildSize: 0.5,
@@ -205,25 +211,38 @@ class MoreModulesScreen extends StatelessWidget {
           controller: scrollController,
           padding: const EdgeInsets.all(20),
           children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant.withAlpha(150),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Reports & Financials Dynamic', style: AppTypography.headlineSmall),
+                Text(
+                  'Reports & Financials Dynamic',
+                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
                 IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
               ],
             ),
             const SizedBox(height: 16),
             HudCard(
               padding: const EdgeInsets.all(16),
-              borderColor: AppColors.borderFocused,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('WEEKLY RUN PERFORMANCE', style: AppTypography.labelSmall),
-                  const SizedBox(height: 8),
-                  Text('1,248 Vehicles Handled', style: AppTypography.headlineMedium),
+                  Text('WEEKLY RUN PERFORMANCE', style: AppTypography.labelSmall.copyWith(color: AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  Text('1,248 Vehicles Handled', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text('Average Retrieval Time: 3.8 mins (-22%)', style: AppTypography.bodySmall),
+                  Text('Average Retrieval Time: 3.8 mins (-22%)', style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -233,11 +252,11 @@ class MoreModulesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('PEAK OPERATIONAL HOURS', style: AppTypography.labelSmall),
-                  const SizedBox(height: 8),
-                  Text('14:00 - 18:30 (Aerocity T2)', style: AppTypography.titleMedium),
+                  Text('PEAK OPERATIONAL HOURS', style: AppTypography.labelSmall.copyWith(color: AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  Text('14:00 - 18:30 (Aerocity T2)', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text('Valet Utilization: 92% • Gate Wait: 2.1 mins', style: AppTypography.bodySmall),
+                  Text('Valet Utilization: 92% • Gate Wait: 2.1 mins', style: AppTypography.bodySmall.copyWith(color: AppColors.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -250,18 +269,31 @@ class MoreModulesScreen extends StatelessWidget {
   void _showNotificationsModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      backgroundColor: AppColors.surfaceContainerLowest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant.withAlpha(150),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Fleet Notifications Feed', style: AppTypography.headlineSmall),
+                Text('Fleet Notifications Feed', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
                 IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
               ],
             ),
@@ -280,7 +312,6 @@ class MoreModulesScreen extends StatelessWidget {
   Widget _buildNotifItem(String title, String desc, String time, bool isUrgent) {
     return HudCard(
       padding: const EdgeInsets.all(12),
-      leftAccentColor: isUrgent ? AppColors.statusOccupied : AppColors.secondaryContainer,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -292,7 +323,7 @@ class MoreModulesScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 3),
-          Text(desc, style: AppTypography.bodySmall),
+          Text(desc, style: AppTypography.bodySmall.copyWith(color: AppColors.onSurfaceVariant)),
         ],
       ),
     );
@@ -301,33 +332,49 @@ class MoreModulesScreen extends StatelessWidget {
   void _showSettingsModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      backgroundColor: AppColors.surfaceContainerLowest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Terminal Settings & Security', style: AppTypography.headlineSmall),
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant.withAlpha(150),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Terminal Settings & Security', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text('Biometric Quick Authentication', style: AppTypography.bodyMedium),
+              activeTrackColor: AppColors.primary,
+              title: Text('Biometric Quick Authentication', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
               subtitle: Text('Require Touch ID / Face ID before releasing keys', style: AppTypography.bodySmall),
               value: true,
               onChanged: (_) {},
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text('Offline Local Sync Mode', style: AppTypography.bodyMedium),
+              activeTrackColor: AppColors.primary,
+              title: Text('Offline Local Sync Mode', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
               subtitle: Text('Queue vehicle intakes locally during apron network loss', style: AppTypography.bodySmall),
               value: true,
               onChanged: (_) {},
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text('SMS / WhatsApp Automated Slips', style: AppTypography.bodyMedium),
+              activeTrackColor: AppColors.primary,
+              title: Text('SMS / WhatsApp Automated Slips', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
               subtitle: Text('Instantly dispatch digital parking token to customer', style: AppTypography.bodySmall),
               value: true,
               onChanged: (_) {},
@@ -342,12 +389,9 @@ class MoreModulesScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardModule,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: AppColors.statusOccupied, width: 1),
-        ),
-        title: Text('Sign Out of Terminal?', style: AppTypography.titleMedium),
+        backgroundColor: AppColors.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Sign Out of Terminal?', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         content: Text(
           'Are you sure you want to sign out of the Parkiko Admin operations terminal?',
           style: AppTypography.bodyMedium,
@@ -355,20 +399,18 @@ class MoreModulesScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL', style: AppTypography.labelMedium.copyWith(color: AppColors.outline)),
+            child: Text('Cancel', style: AppTypography.labelMedium.copyWith(color: AppColors.outline)),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               onLogout();
             },
-            child: Text(
-              'SIGN OUT',
-              style: AppTypography.labelMedium.copyWith(
-                color: AppColors.statusOccupied,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

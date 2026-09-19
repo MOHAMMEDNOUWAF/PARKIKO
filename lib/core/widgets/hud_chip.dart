@@ -3,11 +3,11 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 enum OperationalStatus {
-  available,  // Phosphor Green
-  occupied,   // Radiant Crimson
-  inTransit,  // Radiant Crimson / Amber
-  queue,      // Radiant Amber
-  offline,    // Muted Slate
+  available,  // Green / Retrieved
+  occupied,   // Red / Parked
+  inTransit,  // Amber / In Transit
+  queue,      // Amber / In Queue
+  offline,    // Slate / Offline
   custom,
 }
 
@@ -29,36 +29,55 @@ class HudStatusChip extends StatelessWidget {
     required this.label,
     this.status = OperationalStatus.available,
     this.customColor,
-    this.isUppercase = true,
+    this.isUppercase = false,
   });
-
-  Color _getStatusColor() {
-    if (customColor != null) return customColor!;
-    switch (status) {
-      case OperationalStatus.available:
-        return AppColors.statusAvailable;
-      case OperationalStatus.occupied:
-        return AppColors.statusOccupied;
-      case OperationalStatus.inTransit:
-        return AppColors.statusQueue;
-      case OperationalStatus.queue:
-        return AppColors.statusQueue;
-      case OperationalStatus.offline:
-        return AppColors.statusOffline;
-      case OperationalStatus.custom:
-        return AppColors.primary;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final color = _getStatusColor();
+    Color bg;
+    Color fg;
+    Color dot;
+
+    if (customColor != null) {
+      bg = customColor!.withAlpha(30);
+      fg = customColor!;
+      dot = customColor!;
+    } else {
+      switch (status) {
+        case OperationalStatus.available:
+          bg = AppColors.secondaryContainer;
+          fg = AppColors.onSecondaryContainer;
+          dot = AppColors.primary;
+          break;
+        case OperationalStatus.occupied:
+          bg = AppColors.errorContainer;
+          fg = AppColors.error;
+          dot = AppColors.error;
+          break;
+        case OperationalStatus.inTransit:
+        case OperationalStatus.queue:
+          bg = const Color(0xFFFEF3C7);
+          fg = const Color(0xFFB45309);
+          dot = const Color(0xFFD97706);
+          break;
+        case OperationalStatus.offline:
+          bg = AppColors.surfaceContainer;
+          fg = AppColors.onSurfaceVariant;
+          dot = AppColors.outline;
+          break;
+        case OperationalStatus.custom:
+          bg = AppColors.secondaryContainer;
+          fg = AppColors.primary;
+          dot = AppColors.primary;
+          break;
+      }
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: color.withAlpha(120), width: 1),
+        color: bg,
+        borderRadius: BorderRadius.circular(9999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -66,14 +85,17 @@ class HudStatusChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            color: color,
+            decoration: BoxDecoration(
+              color: dot,
+              shape: BoxShape.circle,
+            ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             isUppercase ? label.toUpperCase() : label,
             style: AppTypography.labelSmall.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
+              color: fg,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -94,30 +116,26 @@ class HudRoleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color border;
     Color bg;
     Color fg;
     String label;
 
     switch (role) {
       case HudRole.admin:
-        border = AppColors.secondaryContainer;
-        bg = AppColors.secondaryContainer.withAlpha(30);
-        fg = AppColors.secondaryContainer;
-        label = customLabel ?? 'ADMIN';
+        bg = AppColors.secondaryContainer;
+        fg = AppColors.onSecondaryContainer;
+        label = customLabel ?? 'Admin';
         break;
       case HudRole.manager:
-        border = AppColors.tertiary;
-        bg = AppColors.tertiary.withAlpha(30);
-        fg = AppColors.tertiary;
-        label = customLabel ?? 'MANAGER';
+        bg = AppColors.surfaceContainerHigh;
+        fg = AppColors.primary;
+        label = customLabel ?? 'Lead';
         break;
       case HudRole.staff:
       case HudRole.valet:
-        border = AppColors.outline;
-        bg = AppColors.outline.withAlpha(25);
-        fg = AppColors.onSurface;
-        label = customLabel ?? 'STAFF';
+        bg = AppColors.surfaceContainerLow;
+        fg = AppColors.onSurfaceVariant;
+        label = customLabel ?? 'Valet';
         break;
     }
 
@@ -125,14 +143,13 @@ class HudRoleChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: border, width: 1),
+        borderRadius: BorderRadius.circular(9999),
       ),
       child: Text(
-        label.toUpperCase(),
+        label,
         style: AppTypography.labelSmall.copyWith(
           color: fg,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

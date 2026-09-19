@@ -42,7 +42,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Staff member ${_nameController.text} enrolled successfully!'),
-          backgroundColor: AppColors.statusAvailable,
+          backgroundColor: AppColors.primary,
         ),
       );
       Navigator.pop(context);
@@ -54,9 +54,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
+        titleSpacing: 16,
+        scrolledUnderElevation: 0,
+        backgroundColor: AppColors.surface,
         title: Text(
           'Add New Staff Member',
-          style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
+          style: AppTypography.titleMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -65,11 +68,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'OPERATIONAL ONBOARDING',
-              style: AppTypography.labelLarge.copyWith(
-                color: AppColors.textHighLuminance,
+              'Operational Onboarding',
+              style: AppTypography.titleMedium.copyWith(
+                color: AppColors.onSurface,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
               ),
             ),
             const SizedBox(height: 4),
@@ -106,25 +108,26 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'OPERATIONAL ROLE',
+                    'Operational Role',
                     style: AppTypography.labelMedium.copyWith(
                       color: AppColors.onSurfaceVariant,
-                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: AppColors.groundZero,
-                      border: Border.all(color: AppColors.borderSubtle, width: 1),
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0x66BEC9C2), width: 1),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedRole,
-                        dropdownColor: AppColors.cardModule,
+                        dropdownColor: AppColors.surfaceContainerLowest,
                         isExpanded: true,
-                        style: AppTypography.bodyMedium.copyWith(color: AppColors.textHighLuminance),
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurface),
                         items: ['Valet Driver', 'Porch Supervisor', 'Site Manager', 'Terminal Lead']
                             .map((role) => DropdownMenuItem(value: role, child: Text(role)))
                             .toList(),
@@ -136,25 +139,26 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'ASSIGNED VALET PROPERTY',
+                    'Assigned Valet Property',
                     style: AppTypography.labelMedium.copyWith(
                       color: AppColors.onSurfaceVariant,
-                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: AppColors.groundZero,
-                      border: Border.all(color: AppColors.borderSubtle, width: 1),
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0x66BEC9C2), width: 1),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedSite,
-                        dropdownColor: AppColors.cardModule,
+                        dropdownColor: AppColors.surfaceContainerLowest,
                         isExpanded: true,
-                        style: AppTypography.bodyMedium.copyWith(color: AppColors.textHighLuminance),
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurface),
                         items: ['Aerocity Grand T2', 'CyberHub Plaza', 'South City Mall', 'Terminal 2 Executive Deck']
                             .map((site) => DropdownMenuItem(value: site, child: Text(site)))
                             .toList(),
@@ -166,7 +170,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   ),
                   const SizedBox(height: 24),
                   HudButton(
-                    text: 'CONFIRM & ENROLL STAFF',
+                    text: 'Confirm & Enroll Staff',
                     icon: Icons.check,
                     isLoading: _isEnrolling,
                     onPressed: _enrollStaff,
