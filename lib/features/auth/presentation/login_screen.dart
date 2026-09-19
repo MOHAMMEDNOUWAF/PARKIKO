@@ -4,6 +4,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/hud_button.dart';
 import '../../../core/widgets/hud_card.dart';
 import '../../../core/widgets/hud_text_field.dart';
+import '../../../core/widgets/parkiko_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -55,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.local_parking, color: AppColors.primary, size: 24),
+                      const ParkikoLogo(size: 24),
                       const SizedBox(width: 8),
                       Text(
                         'Parkiko Admin',
@@ -119,26 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Stack(
                           alignment: Alignment.bottomRight,
                           children: [
-                            Container(
-                              width: 72,
-                              height: 72,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.groundZero,
-                                borderRadius: BorderRadius.zero,
-                                border: Border.all(color: AppColors.borderSubtle, width: 1),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'P',
-                                  style: AppTypography.displayLarge.copyWith(
-                                    color: AppColors.primary,
-                                    fontSize: 42,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            const ParkikoLogo(size: 72),
                             Container(
                               padding: const EdgeInsets.all(3),
                               decoration: const BoxDecoration(

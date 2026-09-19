@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/hud_button.dart';
 import '../../../core/widgets/hud_card.dart';
 import '../../../core/widgets/hud_chip.dart';
+import '../../../core/widgets/parkiko_logo.dart';
 import '../models/valet_ticket.dart';
 import '../providers/operations_provider.dart';
 
@@ -166,6 +167,8 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
           children: [
             Row(
               children: [
+                const ParkikoLogo(size: 22),
+                const SizedBox(width: 8),
                 Text(
                   'PARKIKO',
                   style: AppTypography.titleMedium.copyWith(
