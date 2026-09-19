@@ -318,7 +318,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          'Keep me logged in',
+                                          'Keep me logged in on this terminal',
                                           style: AppTypography.bodySmall.copyWith(
                                             color: AppColors.onSurfaceVariant,
                                           ),
@@ -327,14 +327,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('PIN reset instruction sent to registered terminal admin.'),
+                                          backgroundColor: AppColors.cardModule,
+                                        ),
+                                      );
+                                    },
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
                                       minimumSize: Size.zero,
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     child: Text(
-                                      'Forgot PIN?',
+                                      'Forgot / Reset PIN?',
                                       style: AppTypography.labelSmall.copyWith(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w600,
@@ -390,7 +397,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               // OTP Option
                               Center(
                                 child: TextButton.icon(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('OTP sent to registered supervisor mobile.'),
+                                        backgroundColor: AppColors.cardModule,
+                                      ),
+                                    );
+                                  },
                                   icon: const Icon(Icons.sms, size: 14, color: AppColors.secondaryContainer),
                                   label: Text(
                                     'Login using One-Time Password (OTP)',
@@ -404,10 +418,109 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 16),
+
+                        // Active Terminal Status Strip
+                        HudCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          backgroundColor: AppColors.surfaceContainer,
+                          borderColor: AppColors.borderSubtle,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.garage_outlined, size: 18, color: AppColors.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'North Deck Bay A-14 • Active',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.statusAvailable,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Live Dispatch',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
+              ),
+            ),
+
+            // Clean Footer
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(top: BorderSide(color: AppColors.borderSubtle, width: 1)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Need terminal clearance or shift badge? ',
+                        style: AppTypography.labelSmall.copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Contacting Lead Dispatcher on Deck T2...'),
+                              backgroundColor: AppColors.cardModule,
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Contact Deck Dispatcher',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Terms of Service', style: AppTypography.labelSmall.copyWith(color: AppColors.outline, fontSize: 10)),
+                      Text('  •  ', style: AppTypography.labelSmall.copyWith(color: AppColors.outline, fontSize: 10)),
+                      Text('Privacy Policy', style: AppTypography.labelSmall.copyWith(color: AppColors.outline, fontSize: 10)),
+                      Text('  •  ', style: AppTypography.labelSmall.copyWith(color: AppColors.outline, fontSize: 10)),
+                      Text('Terminal Status', style: AppTypography.labelSmall.copyWith(color: AppColors.outline, fontSize: 10)),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
