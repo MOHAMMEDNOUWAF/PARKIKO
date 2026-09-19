@@ -18,10 +18,10 @@ void main() {
 
     // Verify that the Login screen renders initial elements
     expect(find.text('Welcome to Parkiko'), findsOneWidget);
-    expect(find.text('SIGN IN TO TERMINAL'), findsOneWidget);
+    expect(find.text('Sign In to Terminal'), findsOneWidget);
 
     // Tap the sign-in button
-    await tester.tap(find.text('SIGN IN TO TERMINAL'));
+    await tester.tap(find.text('Sign In to Terminal'));
     await tester.pumpAndSettle(const Duration(seconds: 1));
 
     // Verify navigation into the Main Dashboard
