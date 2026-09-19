@@ -281,49 +281,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                 prefixIcon: Icons.account_circle,
                               ),
                               const SizedBox(height: 14),
-
-                              // Password Input
-                              HudTextField(
-                                label: 'Password or 4-digit PIN',
-                                controller: _passwordController,
-                                placeholder: '••••••••',
-                                isPassword: true,
-                                prefixIcon: Icons.lock,
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Remember me & forgot PIN
+                               // Password Header
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  InkWell(
-                                    onTap: () => setState(() => _keepLoggedIn = !_keepLoggedIn),
-                                    borderRadius: BorderRadius.zero,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 18,
-                                          height: 18,
-                                          decoration: BoxDecoration(
-                                            color: _keepLoggedIn ? AppColors.statusAvailable : AppColors.groundZero,
-                                            borderRadius: BorderRadius.zero,
-                                            border: Border.all(
-                                              color: _keepLoggedIn ? AppColors.statusAvailable : AppColors.borderSubtle,
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: _keepLoggedIn
-                                              ? const Icon(Icons.check, size: 14, color: AppColors.groundZero)
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Keep me logged in on this terminal',
-                                          style: AppTypography.bodySmall.copyWith(
-                                            color: AppColors.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
+                                  Flexible(
+                                    child: Text(
+                                      'Password or 4-digit PIN',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.labelMedium.copyWith(
+                                        color: AppColors.textHighLuminance,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                   TextButton(
@@ -349,6 +318,49 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 6),
+                              // Password Input
+                              HudTextField(
+                                controller: _passwordController,
+                                placeholder: '••••••••',
+                                isPassword: true,
+                                prefixIcon: Icons.lock,
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Remember me
+                              InkWell(
+                                onTap: () => setState(() => _keepLoggedIn = !_keepLoggedIn),
+                                borderRadius: BorderRadius.zero,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: _keepLoggedIn ? AppColors.statusAvailable : AppColors.groundZero,
+                                        borderRadius: BorderRadius.zero,
+                                        border: Border.all(
+                                          color: _keepLoggedIn ? AppColors.statusAvailable : AppColors.borderSubtle,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: _keepLoggedIn
+                                          ? const Icon(Icons.check, size: 14, color: AppColors.groundZero)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        'Keep me logged in on this terminal',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 20),
 
@@ -428,20 +440,27 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.garage_outlined, size: 18, color: AppColors.primary),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'North Deck Bay A-14 • Active',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                      fontWeight: FontWeight.w500,
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.garage_outlined, size: 18, color: AppColors.primary),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        'North Deck Bay A-14 • Active',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 6,
@@ -482,8 +501,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         'Need terminal clearance or shift badge? ',

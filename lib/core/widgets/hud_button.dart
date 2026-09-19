@@ -94,12 +94,16 @@ class HudButton extends StatelessWidget {
                       Icon(icon, size: 18, color: fg),
                       const SizedBox(width: 8),
                     ],
-                    Text(
-                      text.toUpperCase(),
-                      style: AppTypography.labelLarge.copyWith(
-                        color: fg,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
+                    Flexible(
+                      child: Text(
+                        text.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.labelLarge.copyWith(
+                          color: fg,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
                       ),
                     ),
                     if (trailingIcon != null) ...[

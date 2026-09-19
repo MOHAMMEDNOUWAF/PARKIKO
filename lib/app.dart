@@ -11,7 +11,7 @@ class ParkikoApp extends StatefulWidget {
 }
 
 class _ParkikoAppState extends State<ParkikoApp> {
-  bool _isAuthenticated = true; // Set true for instant preview of tactical HUD screens
+  bool _isAuthenticated = false; // Initial landing is the Login Screen
 
   @override
   Widget build(BuildContext context) {
