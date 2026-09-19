@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Valet tickets collection - operations sync
+    match /tickets/{ticketId} {
+      allow read, write: if true;
+    }
+    // Sites and properties collection
+    match /sites/{siteId} {
+      allow read, write: if true;
+    }
+    // Staff management collection
+    match /staff/{staffId} {
+      allow read, write: if true;
+    }
+    // Payments collection
+    match /payments/{paymentId} {
+      allow read, write: if true;
+    }
+    // Default fallback
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
