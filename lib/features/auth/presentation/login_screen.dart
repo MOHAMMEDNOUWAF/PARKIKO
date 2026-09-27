@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/parkiko_logo.dart';
-import '../services/firebase_auth_service.dart';
+import '../providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onLoginSuccess;
 
   const LoginScreen({
@@ -12,10 +15,10 @@ class LoginScreen extends StatefulWidget {
   });
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   // Theme Palette matching HTML specification
   static const Color kBackground = Color(0xFFF1FCF5);
   static const Color kSurface = Color(0xFFF1FCF5);
@@ -32,26 +35,89 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color kOutline = Color(0xFF6F7A73);
   static const Color kOutlineVariant = Color(0xFFBEC9C2);
 
-  final _userIdController = TextEditingController(text: 'PK-8041');
-  final _passwordController = TextEditingController(text: '8041');
+  final _userIdController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isAdmin = true;
   bool _obscurePassword = true;
   bool _keepLoggedIn = true;
   bool _isLoading = false;
 
   void _handleSignIn() async {
+    final identifier = _userIdController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (identifier.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Please enter your Parkiko User ID.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      return;
+    }
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Please enter your password.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    final authService = FirebaseAuthService();
-    final success = await authService.signInWithIdentifier(
-      identifier: _userIdController.text.trim(),
-      password: _passwordController.text.trim(),
+    final result = await ref.read(currentUserProfileProvider.notifier).signIn(
+      identifier: identifier,
+      password: password,
+      rememberMe: _keepLoggedIn,
     );
     if (mounted) {
       setState(() => _isLoading = false);
-      if (success) {
+      if (result.isSuccess) {
         widget.onLoginSuccess();
+      } else {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(result.errorMessage ?? 'Authentication failed.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
       }
     }
+  }
+
+  Widget _buildQuickFillChip(String label, String id, String pin) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _userIdController.text = id;
+          _passwordController.text = pin;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: kSurfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kOutlineVariant.withAlpha(120)),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: kPrimary,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -389,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               // Input 1: User ID
                               Text(
-                                'User ID',
+                                _isAdmin ? 'Admin User ID' : 'Driver / Staff User ID',
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -398,10 +464,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 6),
                               TextField(
+                                key: const Key('login_user_id_field'),
                                 controller: _userIdController,
                                 style: GoogleFonts.inter(fontSize: 14, color: kOnSurface, fontWeight: FontWeight.w500),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter your User ID (e.g. PK-8041)',
+                                  hintText: _isAdmin
+                                      ? 'Enter your User ID (e.g. PK-8041)'
+                                      : 'Enter Driver ID (e.g. ST-108 or driver1)',
                                   hintStyle: GoogleFonts.inter(fontSize: 14, color: kOutline.withAlpha(160)),
                                   prefixIcon: const Icon(Icons.account_circle_outlined, color: kOnSurfaceVariant, size: 20),
                                   filled: true,
@@ -512,7 +581,31 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              // Quick Role Credentials Bar
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Quick ID:',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: kOnSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    _buildQuickFillChip('Admin (admin)', 'admin', '1234'),
+                                    const SizedBox(width: 5),
+                                    _buildQuickFillChip('Manager (MGR-101)', 'MGR-101', '1234'),
+                                    const SizedBox(width: 5),
+                                    _buildQuickFillChip('Asst. Mgr (ASST-101)', 'ASST-101', '1234'),
+                                    const SizedBox(width: 5),
+                                    _buildQuickFillChip('Driver (ST-108)', 'ST-108', '1234'),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
 
                               // Primary CTA Button
                               SizedBox(
@@ -633,6 +726,78 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
+                              if (kDebugMode) ...[
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  alignment: WrapAlignment.center,
+                                  children: [
+                                    TextButton.icon(
+                                      key: const Key('dev_bypass_login_button'),
+                                      onPressed: () {
+                                        ref.read(currentUserProfileProvider.notifier).devBypassLogin();
+                                        widget.onLoginSuccess();
+                                      },
+                                      icon: const Icon(Icons.shield_outlined, size: 15, color: kPrimary),
+                                      label: Text(
+                                        'Demo Admin',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: kPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        ref.read(currentUserProfileProvider.notifier).devBypassManagerLogin();
+                                        widget.onLoginSuccess();
+                                      },
+                                      icon: const Icon(Icons.supervisor_account_outlined, size: 15, color: kPrimary),
+                                      label: Text(
+                                        'Demo Manager',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: kPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        ref.read(currentUserProfileProvider.notifier).devBypassAssistantManagerLogin();
+                                        widget.onLoginSuccess();
+                                      },
+                                      icon: const Icon(Icons.local_shipping_outlined, size: 15, color: kPrimary),
+                                      label: Text(
+                                        'Demo Asst. Mgr',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: kPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      key: const Key('dev_bypass_driver_login_button'),
+                                      onPressed: () {
+                                        ref.read(currentUserProfileProvider.notifier).devBypassDriverLogin();
+                                        widget.onLoginSuccess();
+                                      },
+                                      icon: const Icon(Icons.directions_car, size: 15, color: kSecondary),
+                                      label: Text(
+                                        'Demo Driver',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: kSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),

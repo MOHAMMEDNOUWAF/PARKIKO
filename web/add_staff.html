@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Parkiko Valet Ops - Add New Staff</title>
+<!-- Inter Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration verbatim from Design System -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error-container": "#93000a",
+            "secondary": "#2d6955",
+            "primary-fixed-dim": "#86d6b4",
+            "tertiary-container": "#006d2d",
+            "on-tertiary-fixed-variant": "#005320",
+            "surface-container-highest": "#dae5de",
+            "outline": "#6f7a73",
+            "secondary-fixed-dim": "#96d3bb",
+            "inverse-surface": "#28332e",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#002115",
+            "on-secondary": "#ffffff",
+            "surface-container-low": "#ebf6ef",
+            "on-secondary-fixed-variant": "#10503e",
+            "tertiary-fixed": "#7ffc97",
+            "surface-dim": "#d1ddd6",
+            "surface-tint": "#106b4f",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#62df7d",
+            "on-surface": "#141e1a",
+            "surface-bright": "#f1fcf5",
+            "tertiary": "#005220",
+            "inverse-primary": "#86d6b4",
+            "error-container": "#ffdad6",
+            "primary-container": "#0f6b4f",
+            "on-background": "#141e1a",
+            "outline-variant": "#bec9c2",
+            "background": "#f1fcf5",
+            "on-surface-variant": "#3f4944",
+            "surface": "#f1fcf5",
+            "on-primary-fixed-variant": "#00513a",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed": "#002117",
+            "primary-fixed": "#a1f3cf",
+            "primary": "#00513a",
+            "on-tertiary": "#ffffff",
+            "on-secondary-container": "#326d59",
+            "on-tertiary-container": "#74f18d",
+            "inverse-on-surface": "#e8f3ed",
+            "on-primary-container": "#97e8c5",
+            "on-tertiary-fixed": "#002109",
+            "secondary-fixed": "#b2efd6",
+            "surface-variant": "#dae5de",
+            "surface-container-high": "#dfebe4",
+            "on-primary": "#ffffff",
+            "secondary-container": "#afedd4",
+            "surface-container": "#e5f1ea"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "gutter-mobile": "1rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "margin": "2rem",
+            "margin-mobile": "1rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "label-sm": ["Inter"],
+            "label-lg": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "label-md": ["Inter"],
+            "title-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "title-lg": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "label-lg": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "display-lg": ["3rem", { "lineHeight": "3.5rem", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "title-md": ["1rem", { "lineHeight": "1.5rem", "fontWeight": "600" }],
+            "body-lg": ["1rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "headline-lg-mobile": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-lg": ["2rem", { "lineHeight": "2.5rem", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "headline-md": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "title-lg": ["1.25rem", { "lineHeight": "1.75rem", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .elevation-level-1 {
+      box-shadow: 0px 1px 3px rgba(23, 33, 29, 0.04), 0px 4px 12px rgba(23, 33, 29, 0.02);
+    }
+    .elevation-sticky-bar {
+      box-shadow: 0px -4px 16px rgba(23, 33, 29, 0.06);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex justify-center selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Mobile Administrative Canvas Viewport -->
+<div class="w-full max-w-md bg-background min-h-screen flex flex-col relative pb-32">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-40 bg-surface flex justify-between items-center w-full px-4 h-16 border-b border-outline-variant/40 transition-colors">
+  <div class="flex items-center gap-3">
+    <button aria-label="Go Back" class="w-10 h-10 -ml-1 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+      <span class="material-symbols-outlined text-primary text-[24px]">arrow_back</span>
+    </button>
+    <div>
+      <h1 class="font-title-lg text-title-lg font-bold text-on-surface tracking-tight leading-tight">Add New Staff</h1>
+      <p class="font-label-sm text-label-sm text-on-surface-variant">Valet Team Onboarding</p>
+    </div>
+  </div>
+  <button aria-label="Help and Documentation" class="w-10 h-10 rounded-full border border-outline-variant/60 bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all" type="button">
+    <span class="material-symbols-outlined text-[20px]">help_outline</span>
+  </button>
+</header>
+<!-- Main Registration Form Container -->
+<main class="flex-1 px-4 py-4 space-y-4">
+<!-- 1. Profile Avatar & Visual Badge Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 elevation-level-1 flex flex-col items-center text-center">
+  <div class="relative group cursor-pointer">
+    <div class="w-24 h-24 rounded-full bg-surface-container border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-outline transition-colors hover:border-primary">
+      <span class="material-symbols-outlined text-[40px] text-primary">person</span>
+    </div>
+    <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md">
+      <span class="material-symbols-outlined text-[18px]">photo_camera</span>
+    </div>
+  </div>
+  <div class="mt-3 text-center">
+    <h3 class="font-title-md text-title-md font-semibold text-on-surface">Upload Staff Photo</h3>
+    <p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">JPEG, PNG or HEIC · Max 5MB</p>
+  </div>
+  <div class="flex items-center gap-2.5 mt-3">
+    <button class="px-3 py-1.5 rounded-lg border border-outline-variant text-label-sm font-medium text-on-surface bg-surface hover:bg-surface-container active:scale-95 flex items-center gap-1.5 transition-all" type="button">
+      <span class="material-symbols-outlined text-[16px] text-primary">photo_camera</span>Take Photo
+    </button>
+    <button class="px-3 py-1.5 rounded-lg border border-outline-variant text-label-sm font-medium text-on-surface bg-surface hover:bg-surface-container active:scale-95 flex items-center gap-1.5 transition-all" type="button">
+      <span class="material-symbols-outlined text-[16px] text-primary">upload_file</span>Upload from Gallery
+    </button>
+  </div>
+</section>
+<!-- 2. Personal Information Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 elevation-level-1 space-y-3.5">
+  <div class="flex items-center gap-2 pb-1 border-b border-surface-container">
+    <span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+    <h2 class="font-title-md text-title-md text-on-surface font-semibold">Personal Information</h2>
+  </div>
+  <div class="space-y-1.5">
+    <label class="block font-label-md text-label-md text-on-surface-variant" for="fullName">Full Name <span class="text-error">*</span></label>
+    <div class="relative">
+      <input class="w-full h-12 px-3.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none transition-all" id="fullName" placeholder="e.g. Vikram Sharma" type="text"/>
+    </div>
+  </div>
+  <div class="space-y-1.5">
+    <label class="block font-label-md text-label-md text-on-surface-variant" for="phoneNumber">Mobile Number <span class="text-error">*</span></label>
+    <div class="flex gap-2">
+      <div class="h-12 px-3 rounded-xl border border-outline-variant bg-surface-container flex items-center gap-1.5 text-on-surface font-body-md select-none shrink-0">
+        <span class="font-label-md text-label-md text-on-surface-variant font-semibold">+91 (IN)</span>
+      </div>
+      <input class="flex-1 h-12 px-3.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none transition-all" id="phoneNumber" maxlength="10" placeholder="98765 43210" type="tel"/>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="space-y-1.5">
+      <div class="flex justify-between items-center">
+        <label class="block font-label-md text-label-md text-on-surface-variant" for="staffId">Staff ID (Username) <span class="text-error">*</span></label>
+        <span class="font-label-sm text-label-sm text-primary font-medium">Used for app login</span>
+      </div>
+      <div class="relative flex items-center">
+        <span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">lock</span>
+        <input class="w-full h-12 pl-9 pr-10 font-title-md text-title-md rounded-xl border border-outline-variant bg-surface-container text-on-surface font-semibold focus:outline-none" id="staffId" readonly="" type="text" value="PK-119"/>
+        <button class="absolute right-2.5 w-7 h-7 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Regenerate Staff ID" type="button">
+          <span class="material-symbols-outlined text-[18px]">refresh</span>
+        </button>
+      </div>
+    </div>
+    <div class="space-y-1.5">
+      <label class="block font-label-md text-label-md text-on-surface-variant" for="email">Work Email <span class="text-on-surface-variant text-[11px] font-normal">(Optional)</span></label>
+      <input class="w-full h-12 px-3.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none transition-all" id="email" placeholder="e.g. v.sharma@parkiko.com" type="email"/>
+    </div>
+  </div>
+</section>
+<!-- 3. Operational Role & Valet License Specification -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 elevation-level-1 space-y-3.5">
+<div class="flex items-center justify-between pb-1 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">engineering</span>
+<h2 class="font-title-md text-title-md text-on-surface font-semibold">Valet Role &amp; Qualifications</h2>
+</div>
+<span class="font-label-sm text-label-sm text-primary bg-secondary-container/40 px-2 py-0.5 rounded-md">Required</span>
+</div>
+<!-- Role Selectable Cards -->
+<div class="grid grid-cols-1 gap-2.5 pt-1">
+  <label class="cursor-pointer relative flex items-center justify-between p-3 rounded-xl border-2 border-primary bg-secondary-container/20 text-on-surface transition-all">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary text-[24px]">directions_car</span>
+      <div>
+        <div class="font-title-md text-title-md font-semibold text-primary">Driver</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant">Valet bay &amp; terminal retrieval</div>
+      </div>
+    </div>
+    <div class="flex items-center">
+      <input checked="" class="sr-only peer" name="role" type="radio" value="driver"/>
+      <div class="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center bg-primary">
+        <span class="material-symbols-outlined text-on-primary text-[14px]">check</span>
+      </div>
+    </div>
+  </label>
+  <label class="cursor-pointer relative flex items-center justify-between p-3 rounded-xl border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-all">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-outline text-[24px]">manage_accounts</span>
+      <div>
+        <div class="font-title-md text-title-md font-semibold text-on-surface">Manager</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant">Operations &amp; deck supervisor</div>
+      </div>
+    </div>
+    <div class="flex items-center">
+      <input class="sr-only peer" name="role" type="radio" value="manager"/>
+      <div class="w-5 h-5 rounded-full border border-outline flex items-center justify-center"></div>
+    </div>
+  </label>
+  <label class="cursor-pointer relative flex items-center justify-between p-3 rounded-xl border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-all">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-outline text-[24px]">supervisor_account</span>
+      <div>
+        <div class="font-title-md text-title-md font-semibold text-on-surface">Assistant Manager</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant">Deck coordination &amp; shifts</div>
+      </div>
+    </div>
+    <div class="flex items-center">
+      <input class="sr-only peer" name="role" type="radio" value="asst_manager"/>
+      <div class="w-5 h-5 rounded-full border border-outline flex items-center justify-center"></div>
+    </div>
+  </label>
+</div>
+<!-- Dynamic License Inputs (Mandatory for Valet Runner) -->
+<div class="p-3.5 bg-surface-container-low rounded-xl border border-outline-variant/60 space-y-3" id="licenseContainer">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+      <span class="font-label-md text-label-md font-semibold text-on-surface">Commercial Driving Credentials</span>
+    </div>
+    <span class="font-label-sm text-label-sm text-primary bg-secondary-container/40 px-2 py-0.5 rounded-md font-medium flex items-center gap-1">
+      <span class="material-symbols-outlined text-[13px]">verified</span>RTA Verified
+    </span>
+  </div>
+  <div class="space-y-1.5">
+    <label class="block font-label-md text-label-md text-on-surface-variant" for="licenseNo">Driving License Number <span class="text-error">*</span></label>
+    <input class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface uppercase placeholder:normal-case font-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none" id="licenseNo" placeholder="e.g. DL-0420110023456" type="text"/>
+  </div>
+  <div class="space-y-1.5">
+    <label class="block font-label-md text-label-md text-on-surface-variant" for="licenseExpiry">License Expiry Date <span class="text-error">*</span></label>
+    <div class="relative">
+      <input class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none" id="licenseExpiry" type="date"/>
+    </div>
+  </div>
+</div>
+</section>
+<!-- 4. Site & Location Assignment -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 elevation-level-1 space-y-3.5">
+  <div class="flex items-center justify-between pb-1 border-b border-surface-container">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary text-[20px]">business</span>
+      <h2 class="font-title-md text-title-md text-on-surface font-semibold">Site &amp; Location Assignment</h2>
+    </div>
+    <span class="font-label-sm text-label-sm text-primary bg-secondary-container/40 px-2 py-0.5 rounded-md">Required</span>
+  </div>
+  <div class="space-y-1.5">
+    <label class="block font-label-md text-label-md text-on-surface-variant" for="primarySite">Primary Site / Property <span class="text-error">*</span></label>
+    <div class="relative">
+      <select class="w-full h-12 px-3.5 pr-10 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none transition-all appearance-none cursor-pointer" id="primarySite">
+        <option selected="" value="aerocity">Aerocity Grand Terminal - T2</option>
+        <option value="hyatt">Grand Hyatt &amp; Convention</option>
+        <option value="marriott">JW Marriott Porch</option>
+        <option value="southcity">South City Luxury Mall Deck</option>
+        <option value="cyberhub">CyberHub Corporate Plaza</option>
+      </select>
+      <span class="material-symbols-outlined absolute right-3 top-3.5 text-outline pointer-events-none text-[20px]">expand_more</span>
+    </div>
+  </div>
+  <label class="cursor-pointer flex items-start gap-3 p-3 rounded-xl bg-surface-container-low border border-outline-variant/40 hover:bg-surface-container transition-all">
+    <div class="flex items-center h-5 mt-0.5">
+      <input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary-container/20 border-outline-variant bg-surface-container-lowest cursor-pointer" id="multiSiteAccess" type="checkbox"/>
+    </div>
+    <div class="flex-1 select-none">
+      <div class="flex items-center justify-between">
+        <div class="font-label-md text-label-md font-semibold text-on-surface">Allow Multi-Site Floating Access</div>
+        <span class="font-label-sm text-[11px] text-primary bg-secondary-container/50 px-1.5 py-0.2 rounded font-semibold">Active</span>
+      </div>
+      <p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed mt-0.5">Staff can accept valet and retrieval jobs across any linked sister properties in the cluster</p>
+    </div>
+  </label>
+</section>
+<!-- 5. System Telemetry Note -->
+<div class="flex items-start gap-2.5 p-3 rounded-xl bg-surface-container-low border border-outline-variant/40 text-on-surface-variant font-label-sm text-label-sm">
+  <span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">chat</span>
+  <p class="leading-relaxed">Once created, the staff member receives their valet terminal credentials and <span class="font-semibold text-on-surface">digital ID card as PDF</span> dispatched to their <span class="font-semibold text-primary">WhatsApp</span> number.</p>
+</div>
+</main>
+<!-- 6. Sticky Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-outline-variant/40 elevation-sticky-bar flex justify-center">
+  <div class="w-full max-w-md px-4 py-3 bg-surface flex items-center gap-3">
+    <button class="h-12 px-5 rounded-xl border border-outline-variant bg-transparent text-on-surface font-title-md text-label-lg font-medium hover:bg-surface-container active:scale-95 transition-all" type="button">Cancel</button>
+    <button class="flex-1 h-12 px-6 rounded-xl bg-primary-container hover:bg-primary active:scale-[0.98] text-on-primary font-title-md text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm transition-all" type="button">
+      <span class="material-symbols-outlined text-[20px]">person_add</span>
+      <span>+ Save &amp; Assign Staff</span>
+    </button>
+  </div>
+</div>
+</div>
+<!-- Interactive JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const roleRadios = document.querySelectorAll('input[name="role"]');
+      const licenseContainer = document.getElementById('licenseContainer');
+
+      roleRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.value === 'manager') {
+            licenseContainer.classList.add('opacity-40', 'pointer-events-none');
+          } else {
+            licenseContainer.classList.remove('opacity-40', 'pointer-events-none');
+          }
+        });
+      });
+    });
+</script>
+</body>
+</html>

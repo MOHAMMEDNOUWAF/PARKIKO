@@ -1,25 +1,170 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Valet tickets collection - operations sync
-    match /tickets/{ticketId} {
-      allow read, write: if true;
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
-    // Sites and properties collection
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isRole(role) {
+      return isAuthenticated() && (
+        request.auth.token.role == role ||
+        getUserData().role == role
+      );
+    }
+
+    function isAdmin() {
+      return isRole('ADMIN') || isRole('SUPER_ADMIN');
+    }
+
+    function isManager() {
+      return isRole('MANAGER') || isAdmin();
+    }
+
+    function isValet() {
+      return isRole('VALET') || isRole('DRIVER');
+    }
+
+    function isAssignedLocation(locationId) {
+      return isAdmin() || (
+        locationId in getUserData().locationIds ||
+        getUserData().assignedSite == locationId ||
+        getUserData().locationId == locationId
+      );
+    }
+
+    // Users collection - profile & authorization
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Only admins can modify staff user profiles
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+
+    // User ID mapping collection - identity resolution during authentication
+    match /user_mappings/{mappingId} {
+      allow read: if true; // Needed for pre-auth user ID lookup
+      allow write: if isAdmin();
+    }
+
+    // Organizations collection
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Locations / Sites collection
+    match /locations/{locationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     match /sites/{siteId} {
-      allow read, write: if true;
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
-    // Staff management collection
+
+    // Staff roster collection
     match /staff/{staffId} {
-      allow read, write: if true;
+      allow read: if isAuthenticated();
+      allow write: if isManager();
     }
+
+    // Valet tickets collection - operations sync & lifecycle
+    match /tickets/{ticketId} {
+      // Valet can only read tickets in their assigned location
+      allow read: if isAuthenticated() && (
+        isManager() ||
+        isAssignedLocation(resource.data.locationId) ||
+        resource.data.assignedValetId == request.auth.uid
+      );
+
+      // Valet can create tickets during vehicle intake
+      allow create: if isAuthenticated() && (
+        isManager() ||
+        (isValet() && isAssignedLocation(request.resource.data.locationId))
+      );
+
+      // Valet can update ticket during lifecycle transitions
+      allow update: if isAuthenticated() && (
+        isManager() ||
+        (
+          isValet() &&
+          isAssignedLocation(resource.data.locationId) &&
+          // Cannot tamper with core ticket identities
+          request.resource.data.ticketNumber == resource.data.ticketNumber &&
+          request.resource.data.organizationId == resource.data.organizationId
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Attendance collection - shift tracking
+    match /attendance/{attendanceId} {
+      // Valet can read their own attendance records; manager can read all for location
+      allow read: if isAuthenticated() && (
+        isManager() ||
+        resource.data.valetId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // Valet can only create attendance for their own ID
+      allow create: if isAuthenticated() && (
+        isManager() ||
+        request.resource.data.valetId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+
+      // Valet can update their own check-out time
+      allow update: if isAuthenticated() && (
+        isManager() ||
+        resource.data.valetId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Vehicle condition inspection records
+    match /vehicle_conditions/{conditionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isManager();
+      allow delete: if isAdmin();
+    }
+
+    // Key management records
+    match /key_records/{recordId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (
+        isManager() || isValet()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Ticket audit trail - immutable append-only events
+    match /ticketEvents/{eventId} {
+      allow read: if isAuthenticated();
+      // Append-only: anyone authenticated can record an operational audit entry
+      allow create: if isAuthenticated();
+      // No updates or deletions allowed on audit logs
+      allow update, delete: if false;
+    }
+
     // Payments collection
     match /payments/{paymentId} {
-      allow read, write: if true;
+      allow read: if isAuthenticated();
+      allow write: if isManager();
     }
-    // Default fallback
+
+    // Fallback rule for administrative access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
   }
 }

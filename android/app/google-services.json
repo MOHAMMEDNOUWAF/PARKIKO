@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "109283746501",
-    "project_id": "parkiko-valet",
-    "storage_bucket": "parkiko-valet.firebasestorage.app"
+    "project_number": "773603884657",
+    "project_id": "parkiko-cd383",
+    "storage_bucket": "parkiko-cd383.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:109283746501:android:3b4c5d6e7f8a9b0c",
+        "mobilesdk_app_id": "1:773603884657:android:fbf12c506f83bdfb1e65d0",
         "android_client_info": {
           "package_name": "com.parkiko.parkiko"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyParkikoDemoKeyAndroid12345678"
+          "current_key": "AIzaSyDk4AEdNjpO6ANjyRyOAF9DvGEndWQX-IE"
         }
       ],
       "services": {

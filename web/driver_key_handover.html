@@ -1,0 +1,426 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Parkiko Valet Driver - Slot Allocation &amp; Key Handover</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Inter Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration matching Design System -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "secondary-fixed": "#b2efd6",
+            "surface-variant": "#dae5de",
+            "on-tertiary-fixed-variant": "#005320",
+            "surface-bright": "#f1fcf5",
+            "inverse-primary": "#86d6b4",
+            "surface-dim": "#d1ddd6",
+            "surface-container-highest": "#dae5de",
+            "on-tertiary": "#ffffff",
+            "primary": "#00513a",
+            "tertiary": "#005220",
+            "inverse-on-surface": "#e8f3ed",
+            "inverse-surface": "#28332e",
+            "on-surface-variant": "#3f4944",
+            "secondary": "#2d6955",
+            "on-secondary-container": "#326d59",
+            "on-secondary-fixed": "#002117",
+            "error": "#ba1a1a",
+            "on-error-container": "#93000a",
+            "on-tertiary-fixed": "#002109",
+            "surface-container-low": "#ebf6ef",
+            "outline": "#6f7a73",
+            "tertiary-fixed-dim": "#62df7d",
+            "on-primary-container": "#97e8c5",
+            "surface-container-high": "#dfebe4",
+            "on-primary-fixed": "#002115",
+            "on-background": "#141e1a",
+            "on-error": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-surface": "#141e1a",
+            "secondary-fixed-dim": "#96d3bb",
+            "surface-tint": "#106b4f",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-container": "#74f18d",
+            "primary-container": "#0f6b4f",
+            "primary-fixed-dim": "#86d6b4",
+            "tertiary-container": "#006d2d",
+            "surface-container": "#e5f1ea",
+            "primary-fixed": "#a1f3cf",
+            "tertiary-fixed": "#7ffc97",
+            "secondary-container": "#afedd4",
+            "on-primary-fixed-variant": "#00513a",
+            "surface": "#f1fcf5",
+            "background": "#f1fcf5",
+            "on-secondary-fixed-variant": "#10503e",
+            "outline-variant": "#bec9c2",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline": ["Inter", "sans-serif"],
+            "display": ["Inter", "sans-serif"],
+            "body": ["Inter", "sans-serif"],
+            "label": ["Inter", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .icon-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex justify-center selection:bg-secondary-container">
+<!-- Mobile Container (~390px viewport target) -->
+<div class="w-full max-w-[420px] bg-background min-h-screen flex flex-col relative pb-28 shadow-xl">
+<!-- Notification / Dispatch Banner (Manager & Assistant Manager sync alert) -->
+<div class="transition-all duration-300 ease-out transform fixed top-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[390px] z-50 opacity-0 -translate-y-2 pointer-events-none" id="dispatch-notification">
+<div class="bg-surface-container-lowest border-2 border-primary/20 shadow-2xl rounded-2xl p-3.5 backdrop-blur-md relative overflow-hidden" id="notification-box">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" id="notification-accent-bar"></div>
+<div class="flex items-start gap-3 pl-1">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-primary flex items-center justify-center flex-shrink-0 mt-0.5" id="notification-icon-container">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="cell_tower" id="notification-icon">cell_tower</span>
+</div>
+<div class="flex-1 min-w-0 pr-5">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-secondary-container/70 px-2 py-0.5 rounded-full" id="notification-tag">Live Broadcast</span>
+<span class="text-[10px] font-medium text-on-surface-variant flex items-center gap-1" id="notification-status-chip">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Synced
+          </span>
+</div>
+<p class="text-xs font-bold text-on-surface mt-1 font-headline leading-snug" id="notification-title">Dispatched to Manager &amp; Assistant Manager Deck</p>
+<p class="text-[11px] text-on-surface-variant mt-0.5 leading-relaxed" id="notification-body">Vehicle details and <span class="font-bold text-primary">Key #KT-420</span> live on supervisor dashboard for bay monitoring, runner dispatch &amp; key custody.</p>
+</div>
+<button aria-label="Close notification" class="absolute top-2.5 right-2.5 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition" id="btn-close-toast">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 px-4 pt-4 space-y-4">
+<!-- Stepper Indicator -->
+<!-- Page Headline -->
+<div class="space-y-3"><div class="flex items-center justify-between pt-1"><div class="flex items-center gap-2.5"><div><h2 class="text-lg font-bold text-on-surface tracking-tight font-headline">Vehicle Slot &amp; Key Handover</h2><p class="text-[11px] text-on-surface-variant">Verify assigned bay and accept physical key</p></div></div></div></div>
+<!-- 1. Generated Bill ID & Intake Summary Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/80 shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-secondary-container/40 pointer-events-none blur-xl"></div>
+<div class="flex items-start justify-between border-b border-outline-variant/50 pb-3">
+<div>
+<span class="text-[10px] font-bold text-on-surface-variant tracking-wider uppercase">Generated Bill Token</span>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-base font-extrabold text-primary tracking-tight font-headline tabular-nums">
+                BILL #PK-8842-T2
+              </span>
+<button aria-label="Copy Bill Token ID PK-8842-T2" class="text-primary hover:text-primary-container text-xs p-1 rounded hover:bg-surface-container active:scale-95 transition" id="btn-copy-token" title="Copy Token ID">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Car & Customer Recap Chip Section -->
+<div class="mt-3 space-y-2.5">
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 rounded-md bg-inverse-surface text-surface-bright text-xs font-mono font-bold tracking-wider">
+              MH 02 CD 8821
+            </span>
+<span class="text-xs font-semibold text-on-surface">
+              Mercedes-Benz GLC 300
+            </span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs pt-1">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="person">person</span>
+<span class="truncate font-medium text-on-surface">Priya Sen</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant justify-end">
+<span class="material-symbols-outlined text-[15px] text-outline" data-icon="call">call</span>
+<span class="font-mono text-[11px] tabular-nums text-on-surface">+91 98334 11223</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant bg-surface-container-low/70 px-2.5 py-1.5 rounded-lg">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="schedule">schedule</span>
+              Intake Time: Today, 14:35 IST
+            </span>
+<span class="font-semibold text-secondary">Prepaid FastPass</span>
+</div>
+</div>
+</section>
+<!-- 2. Automated Slot Assignment Card -->
+
+<!-- 3. Physical Key Accepted Button / Status -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/80 shadow-sm space-y-3"><div class="flex items-center justify-between border-b border-outline-variant/50 pb-2.5"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px] text-primary" data-icon="vpn_key">vpn_key</span><h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">Key Custody &amp; Handover</h3></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1" id="key-custody-pill"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span><span id="key-custody-pill-text" class="">Keys Secured</span></span></div><button aria-label="Accept Physical Keys" aria-pressed="true" class="w-full py-2.5 px-3 rounded-xl bg-white text-primary border border-primary font-bold text-xs flex items-center justify-center gap-2 transition shadow-sm relative group cursor-pointer active:scale-[0.98]" data-accepted="true" id="key-status-toggle"><span class="material-symbols-outlined text-[18px] text-primary" data-icon="check_circle" id="key-status-icon">check_circle</span><span class="text-primary font-bold" id="key-status-label">Keys Accepted (In Custody)</span></button><div class="space-y-2 pt-0.5"><div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 flex items-center justify-between text-xs"><div class="flex items-center gap-2.5 min-w-0"><div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-[16px]" data-icon="chat">chat</span></div><div class="min-w-0"><div class="flex items-center gap-1.5"><span class="font-bold text-[11px] text-on-surface">WhatsApp Receipt &amp; E-Pass</span><span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 uppercase">Sent</span></div><p class="text-[10px] text-on-surface-variant truncate">Delivered to +91 98334 11223 • Token PK-8842-T2</p></div></div><span class="material-symbols-outlined text-[16px] text-primary flex-shrink-0" data-icon="verified">verified</span></div><div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/60 flex items-center justify-between text-xs" id="deck-sync-indicator"><div class="flex items-center gap-2.5 min-w-0"><div class="w-7 h-7 rounded-lg bg-secondary-container text-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-[16px]" data-icon="sensors">sensors</span></div><div class="min-w-0"><div class="flex items-center gap-1.5"><span class="font-bold text-[11px] text-on-surface">Manager &amp; Asst. Mgr Deck</span><span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-primary text-on-primary uppercase">Live</span></div><p class="text-[10px] text-on-surface-variant truncate">Real-time bay monitoring, runner alert &amp; custody</p></div></div><span class="font-semibold text-primary flex items-center gap-1 text-[11px] flex-shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Synced</span></div></div></section>
+<!-- 4. Vehicle Status & Action CTAs -->
+<section class="pt-2 space-y-2.5">
+<!-- Main Prominent CTA (Locked by default until keys are accepted) -->
+<button aria-disabled="false" class="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary border border-primary font-bold text-sm tracking-wide shadow-md flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer transition-all" data-unlocked="true" id="btn-complete-intake"><span class="material-symbols-outlined text-[20px] text-on-primary" data-icon="lock" id="btn-complete-icon">local_parking</span><span id="btn-complete-text" class="">Parked &amp; Complete Intake</span></button>
+<p class="text-[11px] text-center text-on-surface-variant font-medium transition-all" id="intake-hint-text"><span class="text-primary font-medium inline-flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> Keys received. You may now complete intake once parked&nbsp;</span></p>
+<button type="button" aria-label="Delete Intake" class="w-full py-3 px-4 rounded-xl border border-error/30 text-error hover:bg-error-container/30 font-semibold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition cursor-pointer" id="btn-delete-intake"><span class="material-symbols-outlined text-[16px]" data-icon="delete_outline">delete_outline</span><span class="">Cancel / Delete Intake</span></button></section>
+</main>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const keyToggleBtn = document.getElementById('key-status-toggle');
+      const keyIcon = document.getElementById('key-status-icon');
+      const keyLabel = document.getElementById('key-status-label');
+      const keyCustodyPillText = document.getElementById('key-custody-pill-text');
+      const toast = document.getElementById('dispatch-notification');
+      const toastTitle = document.getElementById('notification-title');
+      const toastBody = document.getElementById('notification-body');
+      const toastTag = document.getElementById('notification-tag');
+      const toastIcon = document.getElementById('notification-icon');
+      const toastStatusChip = document.getElementById('notification-status-chip');
+      const closeToastBtn = document.getElementById('btn-close-toast');
+      const completeIntakeBtn = document.getElementById('btn-complete-intake');
+      const completeIntakeIcon = document.getElementById('btn-complete-icon');
+      const intakeHintText = document.getElementById('intake-hint-text');
+
+      let isKeysAccepted = false;
+      let toastTimeout = null;
+
+      function showToastMessage({ title, body, tag = "Live Broadcast", icon = "cell_tower", isSuccess = false, duration = 4000 }) {
+        if (!toast) return;
+        if (toastTimeout) clearTimeout(toastTimeout);
+
+        if (toastTitle) toastTitle.textContent = title;
+        if (toastBody) toastBody.innerHTML = body;
+        if (toastTag) {
+          toastTag.textContent = tag;
+          if (isSuccess) {
+            toastTag.className = "text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full";
+          } else {
+            toastTag.className = "text-[10px] font-extrabold uppercase tracking-wider text-primary bg-secondary-container/70 px-2 py-0.5 rounded-full";
+          }
+        }
+        if (toastIcon) toastIcon.textContent = icon;
+
+        toast.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
+        toast.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+
+        toastTimeout = setTimeout(() => {
+          hideDispatchToast();
+        }, duration);
+      }
+
+      function hideDispatchToast() {
+        if (!toast) return;
+        toast.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+        toast.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+      }
+
+      if (closeToastBtn) {
+        closeToastBtn.addEventListener('click', hideDispatchToast);
+      }
+
+      // 1. Key Accepted State Machine
+      if (keyToggleBtn && completeIntakeBtn) {
+        keyToggleBtn.addEventListener('click', () => {
+          if (!isKeysAccepted) {
+            // Transition to Accepted state:
+            // Turns from solid green (bg-primary text-white) to white background with green text and green border
+            isKeysAccepted = true;
+            keyToggleBtn.setAttribute('aria-pressed', 'true');
+            keyToggleBtn.dataset.accepted = 'true';
+            keyToggleBtn.className = "w-full py-2.5 px-3 rounded-xl bg-white text-primary border border-primary font-bold text-xs flex items-center justify-center gap-2 transition shadow-sm relative group cursor-pointer active:scale-[0.98]";
+            if (keyIcon) {
+              keyIcon.className = "material-symbols-outlined text-[18px] text-primary";
+              keyIcon.textContent = "check_circle";
+            }
+            if (keyLabel) {
+              keyLabel.className = "text-primary font-bold";
+              keyLabel.textContent = "Keys Accepted (In Custody)";
+            }
+            if (keyCustodyPillText) {
+              keyCustodyPillText.textContent = "Keys Secured";
+            }
+
+            // Unlock 'Parked & Complete Intake' Button
+            completeIntakeBtn.setAttribute('aria-disabled', 'false');
+            completeIntakeBtn.dataset.unlocked = 'true';
+            completeIntakeBtn.className = "w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary border border-primary font-bold text-sm tracking-wide shadow-md flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer transition-all";
+            if (completeIntakeIcon) {
+              completeIntakeIcon.textContent = "local_parking";
+              completeIntakeIcon.className = "material-symbols-outlined text-[20px] text-on-primary";
+            }
+
+            if (intakeHintText) {
+              intakeHintText.innerHTML = '<span class="text-primary font-medium inline-flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> Keys received. You may now complete intake once parked in Deck B1 Slot #A-14.</span>';
+            }
+
+            // Broadcast notification update
+            showToastMessage({
+              title: "Physical Keys Tagged & Custody Recorded",
+              body: 'Key #KT-420 confirmed accepted by driver. Slot <span class="font-bold text-primary">#A-14</span> ready for vehicle drop-off.',
+              tag: "Key Custody Accepted",
+              icon: "vpn_key",
+              isSuccess: true,
+              duration: 3500
+            });
+
+          } else {
+            // Optional toggle back if clicked again
+            isKeysAccepted = false;
+            keyToggleBtn.setAttribute('aria-pressed', 'false');
+            keyToggleBtn.dataset.accepted = 'false';
+            keyToggleBtn.className = "w-full py-2.5 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition shadow-sm relative group cursor-pointer";
+            if (keyIcon) {
+              keyIcon.className = "material-symbols-outlined text-[18px] text-on-primary";
+              keyIcon.textContent = "check_circle";
+            }
+            if (keyLabel) {
+              keyLabel.className = "text-on-primary font-bold";
+              keyLabel.textContent = "Keys Accepted";
+            }
+            if (keyCustodyPillText) {
+              keyCustodyPillText.textContent = "Active Handover";
+            }
+
+            // Lock 'Parked & Complete Intake' button again
+            completeIntakeBtn.setAttribute('aria-disabled', 'true');
+            completeIntakeBtn.dataset.unlocked = 'false';
+            completeIntakeBtn.className = "w-full py-3.5 px-4 rounded-xl bg-primary/40 border border-primary/30 text-on-primary/70 font-bold text-sm tracking-wide shadow-none flex items-center justify-center gap-2 cursor-not-allowed transition-all select-none";
+            if (completeIntakeIcon) {
+              completeIntakeIcon.textContent = "lock";
+              completeIntakeIcon.className = "material-symbols-outlined text-[18px] opacity-75";
+            }
+            if (intakeHintText) {
+              intakeHintText.innerHTML = '<span class="text-error font-semibold inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">info</span> Please accept physical keys to unlock intake completion</span>';
+            }
+          }
+        });
+      }
+
+      // 2. Complete Intake Action Handling
+      if (completeIntakeBtn) {
+        completeIntakeBtn.addEventListener('click', () => {
+          if (!isKeysAccepted) {
+            // Prompt feedback if clicked while locked
+            showToastMessage({
+              title: "Physical Keys Required",
+              body: 'Please tap <span class="font-bold text-primary">"Keys Accepted"</span> to verify possession of key fob #KT-420 before finalizing intake.',
+              tag: "Action Required",
+              icon: "lock",
+              duration: 3500
+            });
+            // Gentle nudge shake animation on the keys accepted button
+            keyToggleBtn.classList.add('ring-4', 'ring-primary/30');
+            setTimeout(() => {
+              keyToggleBtn.classList.remove('ring-4', 'ring-primary/30');
+            }, 600);
+            return;
+          }
+
+          // Successful Intake Completion
+          completeIntakeBtn.disabled = true;
+          completeIntakeBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+            <span>Finalizing &amp; Syncing Deck...</span>
+          `;
+
+          showToastMessage({
+            title: "Intake Complete & Slot Confirmed",
+            body: 'Vehicle MH 02 CD 8821 parked at <span class="font-bold text-primary">B1 Slot #A-14</span>. Key securely tagged. Returning to Driver Home...',
+            tag: "Completed",
+            icon: "task_alt",
+            isSuccess: true,
+            duration: 5000
+          });
+
+          // Simulate redirect / navigation back to Driver Home after 2 seconds
+          setTimeout(() => {
+            document.querySelector('main').innerHTML = `
+              <div class="py-12 px-2 text-center space-y-5 animate-fade-in">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto shadow-sm">
+                  <span class="material-symbols-outlined text-[36px]">check_circle</span>
+                </div>
+                <div class="space-y-1.5">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-primary bg-secondary-container/60 px-2.5 py-1 rounded-full">Intake Successful</span>
+                  <h2 class="text-xl font-black text-on-surface font-headline pt-1">Slot Assigned &amp; Parked!</h2>
+                  <p class="text-xs text-on-surface-variant max-w-xs mx-auto">
+                    Token <span class="font-mono font-bold text-primary">#PK-8842-T2</span> parked at Deck B1 Slot #A-14. Physical key logged in custody.
+                  </p>
+                </div>
+
+                <div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/70 text-left space-y-2 max-w-xs mx-auto text-xs shadow-sm">
+                  <div class="flex justify-between items-center pb-2 border-b border-outline-variant/40">
+                    <span class="text-on-surface-variant font-medium">Driver Duty</span>
+                    <span class="font-bold text-emerald-700 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Available for Next Car</span>
+                  </div>
+                  <div class="flex justify-between items-center text-[11px]">
+                    <span class="text-on-surface-variant">Live Deck Status</span>
+                    <span class="font-semibold text-on-surface">Supervisor Notified</span>
+                  </div>
+                </div>
+
+                <div class="pt-3">
+                  <button onclick="window.location.reload()" class="w-full max-w-xs py-3.5 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-bold text-sm tracking-wide shadow-md flex items-center justify-center gap-2 active:scale-95 transition mx-auto">
+                    <span class="material-symbols-outlined text-[18px]">home</span>
+                    <span>Back to Driver Home</span>
+                  </button>
+                </div>
+              </div>
+            `;
+          }, 1800);
+        });
+      }
+
+      // Initial show trigger on first load to immediately demonstrate the live broadcast dispatch to Manager/Assistant Manager
+      setTimeout(() => {
+        showToastMessage({
+          title: "Dispatched to Manager & Assistant Manager Deck",
+          body: 'Vehicle details and <span class="font-bold text-primary">Key #KT-420</span> live on supervisor dashboard for bay monitoring, runner dispatch & key custody.',
+          tag: "Live Broadcast",
+          icon: "cell_tower",
+          duration: 4000
+        });
+      }, 500);
+
+      // Copy token micro-interaction
+      const copyBtn = document.getElementById('btn-copy-token');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          navigator.clipboard?.writeText('PK-8842-T2');
+          const original = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-secondary">check</span>';
+          setTimeout(() => { copyBtn.innerHTML = original; }, 1500);
+        });
+      }
+    });
+  </script>
+
+
+
+
+</body></html>

@@ -19,8 +19,9 @@ android {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.parkiko.parkiko"
         // You can update the following values to match your application needs.
-        // Firebase Android SDK requires minimum SDK 21
-        minSdk = 21
+        // Flutter 3.44+ requires minimum SDK 23, and Firebase requires at least 21.
+        // flutter.minSdkVersion satisfies both.
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

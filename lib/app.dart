@@ -1,31 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
-import 'features/navigation/presentation/main_shell_screen.dart';
+import 'features/drivers/presentation/driver_intake_screen.dart';
+import 'features/managers/assistant manager/assistant_manager.dart';
+import 'features/managers/manager/manager.dart';
+import 'features/admin/navigation/presentation/main_shell_screen.dart';
+import 'features/admin/staff/models/staff_model.dart';
 
-class ParkikoApp extends StatefulWidget {
+class ParkikoApp extends ConsumerWidget {
   const ParkikoApp({super.key});
 
   @override
-  State<ParkikoApp> createState() => _ParkikoAppState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(currentUserProfileProvider);
 
-class _ParkikoAppState extends State<ParkikoApp> {
-  bool _isAuthenticated = false; // Initial landing is the Login Screen
-
-  @override
-  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Parkiko',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: _isAuthenticated
-          ? MainShellScreen(
-              onLogout: () => setState(() => _isAuthenticated = false),
-            )
-          : LoginScreen(
-              onLoginSuccess: () => setState(() => _isAuthenticated = true),
-            ),
+      home: authState.when(
+        data: (profile) {
+          if (profile != null && profile.isActive) {
+            if (profile.isAdmin) {
+              return MainShellScreen(
+                onLogout: () {
+                  ref.read(currentUserProfileProvider.notifier).signOut();
+                },
+              );
+            } else if (profile.isAssistantManager) {
+              return AssistantManagerScreen(
+                onLogout: () {
+                  ref.read(currentUserProfileProvider.notifier).signOut();
+                },
+                onBack: () {
+                  ref.read(currentUserProfileProvider.notifier).signOut();
+                },
+              );
+            } else if (profile.isManager) {
+              return ManagerDashboardScreen(
+                currentManager: StaffModel(
+                  id: profile.userId,
+                  name: profile.name,
+                  phone: '',
+                  role: 'manager',
+                  assignedSite: profile.locationIds.isNotEmpty
+                      ? profile.locationIds.first
+                      : 'Grand Hyatt & Convention',
+                ),
+                onLogout: () {
+                  ref.read(currentUserProfileProvider.notifier).signOut();
+                },
+              );
+            } else if (profile.isDriver) {
+              return DriverIntakeScreen(
+                driverProfile: profile,
+                onLogout: () {
+                  ref.read(currentUserProfileProvider.notifier).signOut();
+                },
+              );
+            }
+          }
+          return LoginScreen(
+            onLoginSuccess: () {
+              // Riverpod state change automatically triggers rebuild
+            },
+          );
+        },
+        loading: () => const Scaffold(
+          backgroundColor: AppColors.background,
+          body: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        ),
+        error: (_, _) => LoginScreen(
+          onLoginSuccess: () {},
+        ),
+      ),
     );
   }
 }

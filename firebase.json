@@ -3,28 +3,28 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "parkiko-valet",
-          "appId": "1:109283746501:android:3b4c5d6e7f8a9b0c",
+          "projectId": "parkiko-cd383",
+          "appId": "1:773603884657:android:fbf12c506f83bdfb1e65d0",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "ios": {
         "default": {
-          "projectId": "parkiko-valet",
-          "appId": "1:109283746501:ios:2a3b4c5d6e7f8a9b0c1d",
+          "projectId": "parkiko-cd383",
+          "appId": "1:773603884657:ios:8648cfdfa549240c1e65d0",
           "uploadDebugSymbols": false,
           "fileOutput": "ios/Runner/GoogleService-Info.plist"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
-          "projectId": "parkiko-valet",
+          "projectId": "parkiko-cd383",
           "configurations": {
-            "android": "1:109283746501:android:3b4c5d6e7f8a9b0c",
-            "ios": "1:109283746501:ios:2a3b4c5d6e7f8a9b0c1d",
-            "macos": "1:109283746501:ios:2a3b4c5d6e7f8a9b0c1d",
-            "web": "1:109283746501:web:9c8d7e6f5a4b3c2d1e0f",
-            "windows": "1:109283746501:web:win9c8d7e6f5a4b3c2d"
+            "android": "1:773603884657:android:fbf12c506f83bdfb1e65d0",
+            "ios": "1:773603884657:ios:8648cfdfa549240c1e65d0",
+            "macos": "1:773603884657:ios:8648cfdfa549240c1e65d0",
+            "web": "1:773603884657:web:6dd81fd716c705311e65d0",
+            "windows": "1:773603884657:web:6dd81fd716c705311e65d0"
           }
         }
       }

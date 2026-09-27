@@ -4,16 +4,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-/// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
+/// Default [FirebaseOptions] for use with your Firebase apps on project parkiko-cd383.
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -43,75 +34,75 @@ class DefaultFirebaseOptions {
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: String.fromEnvironment(
       'FIREBASE_WEB_API_KEY',
-      defaultValue: 'AIzaSyParkikoDemoKeyWeb000123456789',
+      defaultValue: 'AIzaSyCDGZwcHeiUPyLHu1YjrTWW6ncvuhYtnW8',
     ),
     appId: String.fromEnvironment(
       'FIREBASE_WEB_APP_ID',
-      defaultValue: '1:109283746501:web:9c8d7e6f5a4b3c2d1e0f',
+      defaultValue: '1:773603884657:web:6dd81fd716c705311e65d0',
     ),
-    messagingSenderId: '109283746501',
-    projectId: 'parkiko-valet',
-    authDomain: 'parkiko-valet.firebaseapp.com',
-    storageBucket: 'parkiko-valet.firebasestorage.app',
-    measurementId: 'G-PARKIKO1234',
+    messagingSenderId: '773603884657',
+    projectId: 'parkiko-cd383',
+    authDomain: 'parkiko-cd383.firebaseapp.com',
+    storageBucket: 'parkiko-cd383.firebasestorage.app',
+    measurementId: 'G-5C212WVZWV',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: String.fromEnvironment(
       'FIREBASE_ANDROID_API_KEY',
-      defaultValue: 'AIzaSyParkikoDemoKeyAndroid12345678',
+      defaultValue: 'AIzaSyDk4AEdNjpO6ANjyRyOAF9DvGEndWQX-IE',
     ),
     appId: String.fromEnvironment(
       'FIREBASE_ANDROID_APP_ID',
-      defaultValue: '1:109283746501:android:3b4c5d6e7f8a9b0c',
+      defaultValue: '1:773603884657:android:fbf12c506f83bdfb1e65d0',
     ),
-    messagingSenderId: '109283746501',
-    projectId: 'parkiko-valet',
-    storageBucket: 'parkiko-valet.firebasestorage.app',
+    messagingSenderId: '773603884657',
+    projectId: 'parkiko-cd383',
+    storageBucket: 'parkiko-cd383.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: String.fromEnvironment(
       'FIREBASE_IOS_API_KEY',
-      defaultValue: 'AIzaSyParkikoDemoKeyIos1234567890abc',
+      defaultValue: 'AIzaSyBo8Ez37DHVeSnqCrMmAYn-9qlMSJ3e-TM',
     ),
     appId: String.fromEnvironment(
       'FIREBASE_IOS_APP_ID',
-      defaultValue: '1:109283746501:ios:2a3b4c5d6e7f8a9b0c1d',
+      defaultValue: '1:773603884657:ios:8648cfdfa549240c1e65d0',
     ),
-    messagingSenderId: '109283746501',
-    projectId: 'parkiko-valet',
-    storageBucket: 'parkiko-valet.firebasestorage.app',
+    messagingSenderId: '773603884657',
+    projectId: 'parkiko-cd383',
+    storageBucket: 'parkiko-cd383.firebasestorage.app',
     iosBundleId: 'com.parkiko.parkiko',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: String.fromEnvironment(
       'FIREBASE_MACOS_API_KEY',
-      defaultValue: 'AIzaSyParkikoDemoKeyMac1234567890abc',
+      defaultValue: 'AIzaSyBo8Ez37DHVeSnqCrMmAYn-9qlMSJ3e-TM',
     ),
     appId: String.fromEnvironment(
       'FIREBASE_MACOS_APP_ID',
-      defaultValue: '1:109283746501:ios:2a3b4c5d6e7f8a9b0c1d',
+      defaultValue: '1:773603884657:ios:8648cfdfa549240c1e65d0',
     ),
-    messagingSenderId: '109283746501',
-    projectId: 'parkiko-valet',
-    storageBucket: 'parkiko-valet.firebasestorage.app',
+    messagingSenderId: '773603884657',
+    projectId: 'parkiko-cd383',
+    storageBucket: 'parkiko-cd383.firebasestorage.app',
     iosBundleId: 'com.parkiko.parkiko',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: String.fromEnvironment(
       'FIREBASE_WINDOWS_API_KEY',
-      defaultValue: 'AIzaSyParkikoDemoKeyWin1234567890abc',
+      defaultValue: 'AIzaSyCDGZwcHeiUPyLHu1YjrTWW6ncvuhYtnW8',
     ),
     appId: String.fromEnvironment(
       'FIREBASE_WINDOWS_APP_ID',
-      defaultValue: '1:109283746501:web:win9c8d7e6f5a4b3c2d',
+      defaultValue: '1:773603884657:web:6dd81fd716c705311e65d0',
     ),
-    messagingSenderId: '109283746501',
-    projectId: 'parkiko-valet',
-    authDomain: 'parkiko-valet.firebaseapp.com',
-    storageBucket: 'parkiko-valet.firebasestorage.app',
+    messagingSenderId: '773603884657',
+    projectId: 'parkiko-cd383',
+    authDomain: 'parkiko-cd383.firebaseapp.com',
+    storageBucket: 'parkiko-cd383.firebasestorage.app',
   );
 }
