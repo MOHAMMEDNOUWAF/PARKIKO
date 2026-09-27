@@ -26,7 +26,11 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
   void initState() {
     super.initState();
     SiteManager.instance.addListener(_onSitesUpdated);
-    _syncSite();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncSite();
+      }
+    });
   }
 
   void _onSitesUpdated() {

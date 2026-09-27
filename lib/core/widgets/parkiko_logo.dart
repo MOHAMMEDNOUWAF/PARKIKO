@@ -1,30 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class ParkikoLogo extends StatelessWidget {
   final double size;
+  final BorderRadius? borderRadius;
 
-  const ParkikoLogo({super.key, this.size = 32});
-
-  static const String rawSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
-  <rect width="120" height="120" rx="28" fill="#0F6B4F"/>
-  <path d="M36 32h26c13.255 0 24 10.745 24 24s-10.745 24-24 24H52v18H36V32z" fill="#FFFFFF"/>
-  <circle cx="62" cy="56" r="10" fill="#0F6B4F"/>
-  <path d="M68 84l18 14M86 84l-18 14" stroke="#86EFAC" stroke-width="4" stroke-linecap="round"/>
-</svg>
-''';
+  const ParkikoLogo({
+    super.key,
+    this.size = 32,
+    this.borderRadius,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Widget image = Image.asset(
+      'assets/icons/parkiko_logo.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F6B4F),
+            borderRadius: borderRadius ?? BorderRadius.circular(size * 0.22),
+          ),
+          child: Icon(Icons.local_parking, color: Colors.white, size: size * 0.6),
+        );
+      },
+    );
+
+    if (borderRadius != null) {
+      return ClipRRect(
+        borderRadius: borderRadius!,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: image,
+        ),
+      );
+    }
+
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(
-        rawSvg,
-        width: size,
-        height: size,
-      ),
+      child: image,
     );
   }
 }

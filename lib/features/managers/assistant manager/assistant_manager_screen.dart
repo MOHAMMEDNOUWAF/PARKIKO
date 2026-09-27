@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import 'assistant_manager_stats.dart';
 
 /// Entry point for the Parkiko Valet Ops - Assistant Manager Screen.
@@ -597,20 +598,7 @@ class _AssistantManagerScreenState extends State<AssistantManagerScreen>
               // Logo + Title + Subtitle
               Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00513A),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.local_parking_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
+                  const ParkikoLogo(size: 32),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

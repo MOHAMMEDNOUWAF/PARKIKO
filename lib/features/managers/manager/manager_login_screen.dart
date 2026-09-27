@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../../admin/staff/models/staff_model.dart';
 import '../../admin/staff/services/staff_manager.dart';
 import 'manager_dashboard_screen.dart';
@@ -154,28 +155,23 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen> {
                     // Brand Badge Header
                     Center(
                       child: Container(
-                        width: 56,
-                        height: 56,
+                        width: 68,
+                        height: 68,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00513A),
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFBEC9C2).withAlpha(120), width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00513A).withAlpha(51),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
+                              color: Colors.black.withAlpha(10),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'P',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Inter',
-                          ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: const ParkikoLogo(size: 64),
                         ),
                       ),
                     ),

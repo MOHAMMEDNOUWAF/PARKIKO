@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.local_parking, color: kPrimary, size: 26),
+                      const ParkikoLogo(size: 26),
                       const SizedBox(width: 8),
                       Text(
                         'Parkiko Admin',
