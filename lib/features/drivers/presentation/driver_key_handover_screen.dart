@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../core/widgets/parkiko_logo.dart';
 import '../../auth/models/user_profile.dart';
 import '../../admin/operations/services/key_record_repository.dart';
 import '../../admin/operations/services/ticket_repository.dart';
@@ -303,13 +304,22 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, color: kOnSurface, size: 20),
           onPressed: () => Navigator.pop(context, false),
         ),
-        title: Text(
-          'Vehicle Slot & Key Handover',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: kOnSurface,
-          ),
+        title: Row(
+          children: [
+            const ParkikoLogo(size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Vehicle Slot & Key Handover',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: kOnSurface,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
       body: SafeArea(

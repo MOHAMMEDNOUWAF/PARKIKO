@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/hud_card.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../../sites/services/site_manager.dart';
 import '../../sites/presentation/add_site_wizard_screen.dart';
 import '../../../managers/manager/manager_payment_stats.dart';
@@ -1333,24 +1334,30 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         scrolledUnderElevation: 0,
         backgroundColor: AppColors.surface,
         automaticallyImplyLeading: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            Text(
-              'Reports & Financials',
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                fontSize: 18,
-              ),
-            ),
-            Text(
-              'Multi-Site Valet Revenue & Analytics',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 11,
-              ),
+            const ParkikoLogo(size: 30),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Reports & Financials',
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  'Multi-Site Valet Revenue & Analytics',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

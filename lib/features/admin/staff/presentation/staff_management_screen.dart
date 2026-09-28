@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../auth/services/user_id_resolver.dart';
 import '../../sites/services/site_manager.dart';
@@ -595,16 +596,8 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      Text(
-                        'P',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: _kBrand,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      SizedBox(width: 4),
+                      ParkikoLogo(size: 28),
+                      SizedBox(width: 8),
                       Text(
                         'Parkiko',
                         style: TextStyle(

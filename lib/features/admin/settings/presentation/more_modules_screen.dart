@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../../sites/presentation/add_site_wizard_screen.dart';
 import '../../sites/services/site_manager.dart';
 
@@ -72,19 +73,7 @@ class _MoreModulesScreenState extends State<MoreModulesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryContainer.withAlpha(25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.local_parking,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                      ),
+                      const ParkikoLogo(size: 32),
                       const SizedBox(width: 12),
                       Text(
                         'Parkiko',

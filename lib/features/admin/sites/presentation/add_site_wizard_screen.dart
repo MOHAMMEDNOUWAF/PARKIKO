@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../models/site_model.dart';
 import '../services/site_manager.dart';
 
@@ -317,25 +318,33 @@ class _AddNewSiteScreenState extends State<AddNewSiteScreen> {
           onPressed: () => Navigator.maybePop(context),
           tooltip: 'Back to Multi-Site Settings',
         ),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: const Row(
           children: [
-            Text(
-              'Add New Site',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF141E1A),
-                letterSpacing: -0.2,
-              ),
-            ),
-            SizedBox(height: 1),
-            Text(
-              'Multi-Site Valet Onboarding',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF6F7A73),
+            ParkikoLogo(size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Add New Site',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF141E1A),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  SizedBox(height: 1),
+                  Text(
+                    'Multi-Site Valet Onboarding',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF6F7A73),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

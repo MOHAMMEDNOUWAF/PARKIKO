@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../services/site_manager.dart';
 import 'add_site_wizard_screen.dart';
 
@@ -170,19 +171,23 @@ class _AddNewSiteScreenState extends State<AddNewSiteScreen> {
           onPressed: () => Navigator.maybePop(context),
           tooltip: 'Back',
         ),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: const Row(
           children: [
-            Text(
-              'Add New Site',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF141E1A),
-                letterSpacing: -0.2,
-              ),
-            ),
-            SizedBox(height: 1),
+            ParkikoLogo(size: 26),
+            SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add New Site',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF141E1A),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                SizedBox(height: 1),
             Text(
               'Multi-Site Valet Onboarding',
               style: TextStyle(

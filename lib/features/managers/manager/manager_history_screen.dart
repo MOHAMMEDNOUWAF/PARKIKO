@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 import '../../drivers/models/vehicle_intake_model.dart';
 import '../../drivers/services/driver_service.dart';
 import '../../admin/sites/services/site_manager.dart';
@@ -583,24 +584,7 @@ class _ManagerHistoryScreenState extends State<ManagerHistoryScreen> {
         toolbarHeight: 64,
         title: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00513A),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              alignment: Alignment.center,
-              child: const Text(
-                'P',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  height: 1.0,
-                ),
-              ),
-            ),
+            const ParkikoLogo(size: 34),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

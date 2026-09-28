@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -259,6 +260,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     constraints: const BoxConstraints(),
                     tooltip: 'Go back',
                   ),
+                  const SizedBox(width: 12),
+                  const ParkikoLogo(size: 26),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(

@@ -7,6 +7,7 @@ import '../../auth/models/user_profile.dart';
 import '../../admin/sites/services/site_manager.dart';
 import '../models/vehicle_intake_model.dart';
 import '../services/driver_service.dart';
+import '../../../core/widgets/parkiko_logo.dart';
 import 'driver_key_handover_screen.dart';
 
 /// Vehicle Registration Number strict Indian plate formatter: `KL 00 AA 0000`
@@ -572,6 +573,8 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                     borderRadius: BorderRadius.circular(24),
                     child: Row(
                       children: [
+                        const ParkikoLogo(size: 34),
+                        const SizedBox(width: 10),
                         // Avatar Badge
                         Container(
                           width: 40,
