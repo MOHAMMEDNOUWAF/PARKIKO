@@ -7,6 +7,7 @@ import '../../operations/presentation/live_operations_screen.dart';
 import '../../payments/presentation/payments_screen.dart';
 import '../../settings/presentation/more_modules_screen.dart';
 import '../../staff/presentation/staff_management_screen.dart';
+import '../../sites/services/site_manager.dart';
 
 class MainShellScreen extends ConsumerStatefulWidget {
   final VoidCallback onLogout;
@@ -22,6 +23,13 @@ class MainShellScreen extends ConsumerStatefulWidget {
 
 class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   int _currentTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // In Admin screen, valet site selection defaults to 'All Sites'
+    SiteManager.instance.selectSite('All Sites');
+  }
 
   @override
   Widget build(BuildContext context) {

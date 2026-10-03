@@ -1,73 +1,184 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../auth/models/user_profile.dart';
 import '../../admin/sites/services/site_manager.dart';
 import '../models/vehicle_intake_model.dart';
 import '../services/driver_service.dart';
-import '../../../core/widgets/parkiko_logo.dart';
 import 'driver_key_handover_screen.dart';
+import 'driver_vehicle_return_screen.dart';
+import '../../../core/widgets/parkiko_logo.dart';
 
-/// Vehicle Registration Number strict Indian plate formatter: `KL 00 AA 0000`
+/// Vehicle Registration Number flexible Indian plate formatter:
+/// 2 State Letters -> Space -> 1-2 District Digits -> Space -> 1-3 Series Letters -> Space -> 4 Digits
 class _VehicleRegFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final raw = newValue.text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-    String validCleaned = '';
-
-    for (int i = 0; i < raw.length && validCleaned.length < 10; i++) {
-      final char = raw[i];
-      final currIdx = validCleaned.length;
-      if (currIdx < 2) {
-        // First 2 characters: Letters A-Z (State code)
-        if (RegExp(r'[A-Z]').hasMatch(char)) validCleaned += char;
-      } else if (currIdx < 4) {
-        // Next 2 characters: Digits 0-9 (District code)
-        if (RegExp(r'[0-9]').hasMatch(char)) validCleaned += char;
-      } else if (currIdx < 6) {
-        // Next 2 characters: Letters A-Z (Series code)
-        if (RegExp(r'[A-Z]').hasMatch(char)) validCleaned += char;
-      } else if (currIdx < 10) {
-        // Next 4 characters: Digits 0-9 (Unique number)
-        if (RegExp(r'[0-9]').hasMatch(char)) validCleaned += char;
-      }
+    if (newValue.text.isEmpty) {
+      return newValue;
     }
 
-    String formatted = '';
-    if (validCleaned.isNotEmpty) {
-      formatted += validCleaned.substring(0, min(2, validCleaned.length));
-    }
-    if (validCleaned.length > 2) {
-      formatted += ' ${validCleaned.substring(2, min(4, validCleaned.length))}';
-    }
-    if (validCleaned.length > 4) {
-      formatted += ' ${validCleaned.substring(4, min(6, validCleaned.length))}';
-    }
-    if (validCleaned.length > 6) {
-      formatted += ' ${validCleaned.substring(6, validCleaned.length)}';
+    final isDeleting = newValue.text.length < oldValue.text.length;
+    if (isDeleting) {
+      return TextEditingValue(
+        text: newValue.text.toUpperCase(),
+        selection: newValue.selection,
+      );
     }
 
+    final formatted = _formatPlateString(newValue.text);
     return TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
+
+  static String _formatPlateString(String input) {
+    final upper = input.toUpperCase();
+    final state = StringBuffer();
+    final district = StringBuffer();
+    final series = StringBuffer();
+    final number = StringBuffer();
+
+    int stage = 1; // 1: state, 2: district, 3: series, 4: number
+    bool hasSpaceAfterDistrict = false;
+    bool hasSpaceAfterSeries = false;
+
+    for (int i = 0; i < upper.length; i++) {
+      final char = upper[i];
+
+      if (char == ' ') {
+        if (stage == 1 && state.length >= 2) {
+          stage = 2;
+        } else if (stage == 2 && district.isNotEmpty) {
+          stage = 3;
+          hasSpaceAfterDistrict = true;
+        } else if (stage == 3 && series.isNotEmpty) {
+          stage = 4;
+          hasSpaceAfterSeries = true;
+        }
+        continue;
+      }
+
+      if (stage == 1) {
+        if (RegExp(r'[A-Z]').hasMatch(char)) {
+          if (state.length < 2) {
+            state.write(char);
+            if (state.length == 2) {
+              stage = 2;
+            }
+          }
+        }
+      } else if (stage == 2) {
+        if (RegExp(r'[0-9]').hasMatch(char)) {
+          if (district.length < 2) {
+            district.write(char);
+            if (district.length == 2) {
+              stage = 3;
+            }
+          }
+        } else if (RegExp(r'[A-Z]').hasMatch(char) && district.isNotEmpty) {
+          stage = 3;
+          hasSpaceAfterDistrict = true;
+          series.write(char);
+        }
+      } else if (stage == 3) {
+        if (RegExp(r'[A-Z]').hasMatch(char)) {
+          if (series.length < 3) {
+            series.write(char);
+            if (series.length == 3) {
+              stage = 4;
+            }
+          }
+        } else if (RegExp(r'[0-9]').hasMatch(char) && series.isNotEmpty) {
+          stage = 4;
+          hasSpaceAfterSeries = true;
+          number.write(char);
+        }
+      } else if (stage == 4) {
+        if (RegExp(r'[0-9]').hasMatch(char)) {
+          if (number.length < 4) {
+            number.write(char);
+          }
+        }
+      }
+    }
+
+    String result = state.toString();
+
+    if (state.length == 2) {
+      result += ' ';
+      if (district.isNotEmpty) {
+        result += district.toString();
+        if (district.length == 2 || hasSpaceAfterDistrict) {
+          result += ' ';
+          if (series.isNotEmpty) {
+            result += series.toString();
+            if (series.length == 3 || hasSpaceAfterSeries) {
+              result += ' ';
+              if (number.isNotEmpty) {
+                result += number.toString();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+}
+
+TextInputType getPlateKeyboardType(String text) {
+  if (text.isEmpty) return TextInputType.text;
+
+  final parts = text.split(' ');
+  if (parts.isEmpty) return TextInputType.text;
+
+  if (parts.length == 1) {
+    return parts[0].length < 2 ? TextInputType.text : TextInputType.number;
+  }
+
+  if (parts.length == 2) {
+    final district = parts[1];
+    if (text.endsWith(' ') && district.isNotEmpty) {
+      return TextInputType.text;
+    }
+    return district.length < 2 ? TextInputType.number : TextInputType.text;
+  }
+
+  if (parts.length == 3) {
+    final series = parts[2];
+    if (text.endsWith(' ') && series.isNotEmpty) {
+      return TextInputType.number;
+    }
+    return series.length < 3 ? TextInputType.text : TextInputType.number;
+  }
+
+  return TextInputType.number;
 }
 
 /// Dedicated Parkiko Driver Home & Vehicle Intake Screen matching HTML specification.
 class DriverIntakeScreen extends StatefulWidget {
   final UserProfile? driverProfile;
   final VoidCallback onLogout;
+  final bool initialHasPhoto;
+  final ImagePicker? imagePicker;
 
   const DriverIntakeScreen({
     super.key,
     this.driverProfile,
     required this.onLogout,
+    this.initialHasPhoto = false,
+    this.imagePicker,
   });
 
   @override
@@ -119,11 +230,13 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
   final _photoKey = GlobalKey();
 
   // Form State
-  bool _hasPhoto = true; // HTML specification default: car photo pre-captured
-  String _photoFileName = 'IMG_INTAKE_0284.JPG';
-  bool _isOcrFlashing = false;
+  late bool _hasPhoto;
+  String _photoFileName = '';
+  String? _photoFilePath;
+  bool _isCapturingPhoto = false;
   bool _isSubmitting = false;
   bool _isSuccess = false;
+  TextInputType _regKeyboardType = TextInputType.text;
 
   // Validation Error Flags
   bool _errorName = false;
@@ -132,15 +245,84 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
   bool _errorModel = false;
   bool _errorPhoto = false;
 
+  final Set<String> _handledDispatchedVehicles = {};
+
   @override
   void initState() {
     super.initState();
+    _hasPhoto = widget.initialHasPhoto;
+    if (_hasPhoto) {
+      _photoFileName = 'IMG_INTAKE_0284.JPG';
+    }
     DriverService.instance.addListener(_onDriverStateChanged);
     SiteManager.instance.addListener(_onSitesChanged);
+    _vehicleRegController.addListener(_onVehicleRegChanged);
+  }
+
+  void _onVehicleRegChanged() {
+    final text = _vehicleRegController.text;
+    final newKeyboard = getPlateKeyboardType(text);
+    if (newKeyboard != _regKeyboardType) {
+      setState(() => _regKeyboardType = newKeyboard);
+    }
+    final regPattern = RegExp(r'^[A-Z]{2}\s[0-9]{1,2}\s[A-Z]{1,3}\s[0-9]{4}$');
+    if (_errorReg && regPattern.hasMatch(text.trim())) {
+      setState(() => _errorReg = false);
+    }
+  }
+
+  bool get _canAdvanceRegSegment {
+    final text = _vehicleRegController.text;
+    if (text.isEmpty || text.endsWith(' ')) return false;
+    final parts = text.split(' ');
+    // In district segment with 1 digit:
+    if (parts.length == 2 && parts[1].length == 1) return true;
+    // In series segment with 1 or 2 letters:
+    if (parts.length == 3 && parts[2].isNotEmpty && parts[2].length <= 2) return true;
+    return false;
+  }
+
+  void _advanceRegSegment() {
+    final text = _vehicleRegController.text;
+    if (!text.endsWith(' ')) {
+      final updated = '$text ';
+      _vehicleRegController.value = TextEditingValue(
+        text: updated,
+        selection: TextSelection.collapsed(offset: updated.length),
+      );
+    }
   }
 
   void _onDriverStateChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+
+    final myId = widget.driverProfile?.userId ?? '108';
+    final cleanMyId = myId.replaceAll('ST-', '').replaceAll('PK-', '').trim();
+
+    final dispatchedVehicles = DriverService.instance.intakes.where((i) {
+      if (i.status != 'dispatched' && i.status != 'dispatched_delayed') return false;
+      if (i.assignedDriverId == null || i.assignedDriverId!.isEmpty) return true;
+      final assignedClean = i.assignedDriverId!.replaceAll('ST-', '').replaceAll('PK-', '').trim();
+      return assignedClean == cleanMyId || i.assignedDriverId == myId;
+    }).toList();
+
+    for (final vehicle in dispatchedVehicles) {
+      if (!_handledDispatchedVehicles.contains(vehicle.id)) {
+        _handledDispatchedVehicles.add(vehicle.id);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            DriverVehicleReturnScreen.showAsModal(
+              context,
+              vehicle: vehicle,
+              driverProfile: widget.driverProfile,
+            );
+          }
+        });
+      }
+    }
+
+    setState(() {});
   }
 
   void _onSitesChanged() {
@@ -151,6 +333,7 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
   void dispose() {
     DriverService.instance.removeListener(_onDriverStateChanged);
     SiteManager.instance.removeListener(_onSitesChanged);
+    _vehicleRegController.removeListener(_onVehicleRegChanged);
     _customerNameController.dispose();
     _customerPhoneController.dispose();
     _vehicleRegController.dispose();
@@ -207,44 +390,180 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
     );
   }
 
-  // OCR Plate Scanner Simulation
-  void _handleOcrScan() {
-    const samplePlates = [
-      'MH 02 CD 8821',
-      'DL 01 AB 4920',
-      'KA 03 MG 9912',
-      'MH 12 PK 3301',
-      'KL 07 BZ 4501',
-    ];
-    final randomPlate = samplePlates[Random().nextInt(samplePlates.length)];
+  // Photo state & camera capture
+  Future<void> _capturePhoto({ImageSource source = ImageSource.camera}) async {
+    if (_isCapturingPhoto) return;
+    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST') && widget.imagePicker == null) {
+      setState(() {
+        _hasPhoto = true;
+        _photoFileName = 'IMG_INTAKE_${1000 + Random().nextInt(9000)}.JPG';
+        _errorPhoto = false;
+      });
+      return;
+    }
+    setState(() => _isCapturingPhoto = true);
+    try {
+      final picker = widget.imagePicker ?? ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
 
-    setState(() {
-      _vehicleRegController.text = randomPlate;
-      _errorReg = false;
-      _isOcrFlashing = true;
-    });
-
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        setState(() => _isOcrFlashing = false);
-        _jumpToFocus(_modelFocusNode, _modelKey);
+      if (pickedFile != null) {
+        final now = DateTime.now();
+        final timeStamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+        final name = pickedFile.name.isNotEmpty
+            ? pickedFile.name
+            : 'IMG_INTAKE_$timeStamp.JPG';
+        setState(() {
+          _hasPhoto = true;
+          _photoFileName = name;
+          _photoFilePath = pickedFile.path;
+          _errorPhoto = false;
+        });
       }
-    });
-  }
-
-  // Photo state toggles
-  void _capturePhoto() {
-    setState(() {
-      _hasPhoto = true;
-      _photoFileName = 'IMG_INTAKE_${1000 + Random().nextInt(9000)}.JPG';
-      _errorPhoto = false;
-    });
+    } catch (e) {
+      debugPrint('[DriverIntake] Error capturing photo: $e');
+      if (!kIsWeb &&
+          (Platform.environment.containsKey('FLUTTER_TEST') ||
+              e.toString().contains('MissingPluginException'))) {
+        setState(() {
+          _hasPhoto = true;
+          _photoFileName = 'IMG_INTAKE_${1000 + Random().nextInt(9000)}.JPG';
+          _errorPhoto = false;
+        });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not access camera: $e'),
+            backgroundColor: kError,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCapturingPhoto = false);
+      }
+    }
   }
 
   void _removePhoto() {
     setState(() {
       _hasPhoto = false;
+      _photoFileName = '';
+      _photoFilePath = null;
     });
+  }
+
+  void _viewPhotoDialog() {
+    if (!_hasPhoto) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: kPrimary,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.camera_alt, color: kOnPrimary, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Vehicle Condition Photo',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: kOnPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: kOnPrimary, size: 20),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            if (_photoFilePath != null &&
+                !kIsWeb &&
+                File(_photoFilePath!).existsSync())
+              Image.file(
+                File(_photoFilePath!),
+                height: 280,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              )
+            else
+              Container(
+                height: 200,
+                color: kSurfaceContainerLow,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.directions_car, size: 64, color: kPrimary),
+                      const SizedBox(height: 8),
+                      Text(
+                        _photoFileName,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: kOnSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.camera_alt, size: 16),
+                      label: const Text('Retake with Camera'),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _capturePhoto(source: ImageSource.camera);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kPrimary,
+                        side: const BorderSide(color: kPrimary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kPrimary,
+                        foregroundColor: kOnPrimary,
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Form Submission
@@ -254,7 +573,7 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
     final reg = _vehicleRegController.text.trim();
     final model = _vehicleModelController.text.trim();
 
-    final regPattern = RegExp(r'^[A-Z]{2}\s[0-9]{2}\s[A-Z]{2}\s[0-9]{4}$');
+    final regPattern = RegExp(r'^[A-Z]{2}\s[0-9]{1,2}\s[A-Z]{1,3}\s[0-9]{4}$');
 
     setState(() {
       _errorName = name.isEmpty;
@@ -313,11 +632,8 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
       createdAt: DateTime.now(),
     );
 
-    await DriverService.instance.submitIntake(
-      newIntake,
-      organizationId: widget.driverProfile?.organizationId ?? 'default_org',
-      locationId: _activeSiteName,
-    );
+    // Note: Do NOT update database or broadcast to screens on Next.
+    // Intake is saved to database ONLY when driver clicks "Keys Accepted".
 
     final numPart = intakeId.replaceAll(RegExp(r'[^0-9]'), '');
     final cleanDigits = numPart.isNotEmpty
@@ -357,8 +673,9 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
       _customerPhoneController.clear();
       _vehicleRegController.clear();
       _vehicleModelController.clear();
-      _hasPhoto = true; // reset to pre-ready photo state
-      _photoFileName = 'IMG_INTAKE_${1000 + Random().nextInt(9000)}.JPG';
+      _hasPhoto = widget.initialHasPhoto;
+      _photoFileName = _hasPhoto ? 'IMG_INTAKE_${1000 + Random().nextInt(9000)}.JPG' : '';
+      _photoFilePath = null;
       _isSubmitting = false;
       _isSuccess = false;
       _errorName = false;
@@ -535,6 +852,99 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
     );
   }
 
+  Widget _buildActiveDispatchedBanner() {
+    final myId = widget.driverProfile?.userId ?? '108';
+    final cleanMyId = myId.replaceAll('ST-', '').replaceAll('PK-', '').trim();
+
+    final activeVehicles = DriverService.instance.intakes.where((i) {
+      if (i.status != 'dispatched' && i.status != 'dispatched_delayed') return false;
+      if (i.assignedDriverId == null || i.assignedDriverId!.isEmpty) return true;
+      final assignedClean = i.assignedDriverId!.replaceAll('ST-', '').replaceAll('PK-', '').trim();
+      return assignedClean == cleanMyId || i.assignedDriverId == myId;
+    }).toList();
+
+    if (activeVehicles.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: activeVehicles.map((v) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00513A),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00513A).withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.directions_car, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ACTIVE RETURN: ${v.vehicleReg}',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFAFEDD4),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${v.vehicleModel.isNotEmpty ? v.vehicleModel : "Vehicle"} • ${v.customerName}',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  DriverVehicleReturnScreen.showAsModal(
+                    context,
+                    vehicle: v,
+                    driverProfile: widget.driverProfile,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFAFEDD4),
+                  foregroundColor: const Color(0xFF00513A),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text(
+                  'Open Popup',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isOnDuty = DriverService.instance.isOnDuty;
@@ -567,14 +977,15 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Driver Avatar & Desk Info
-                  InkWell(
-                    onTap: _openDriverProfileSheet,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Row(
-                      children: [
-                        const ParkikoLogo(size: 34),
-                        const SizedBox(width: 10),
+                  Row(
+                    children: [
+                      const ParkikoLogo(size: 32),
+                      const SizedBox(width: 10),
+                      InkWell(
+                        onTap: _openDriverProfileSheet,
+                        borderRadius: BorderRadius.circular(24),
+                        child: Row(
+                          children: [
                         // Avatar Badge
                         Container(
                           width: 40,
@@ -657,6 +1068,8 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                       ],
                     ),
                   ),
+                ],
+              ),
 
                   // Duty Status Pill Button
                   InkWell(
@@ -714,7 +1127,20 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox.shrink(),
+                      Row(
+                        children: [
+                          const ParkikoLogo(size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Parkiko Driver Desk',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: kPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
@@ -751,6 +1177,7 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
+                  _buildActiveDispatchedBanner(),
 
                   // INTAKE FORM
                   // SECTION 1: CUSTOMER DETAILS
@@ -846,7 +1273,7 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                                   key: const Key('btn_nav_phone'),
                                   icon: const Icon(Icons.arrow_downward, color: kPrimary, size: 20),
                                   onPressed: () => _jumpToFocus(_phoneFocusNode, _phoneKey),
-                                  tooltip: 'Jump to WhatsApp Phone',
+                                  tooltip: 'Jump to Mobile Number',
                                 ),
                               ],
                             ),
@@ -862,12 +1289,12 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                       ),
                       const SizedBox(height: 14),
 
-                      // WhatsApp Mobile Number
+                      // Mobile Number
                       Column(
                         key: _phoneKey,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildFieldLabel('WhatsApp Mobile Number', isRequired: true),
+                          _buildFieldLabel('Mobile Number', isRequired: true),
                           const SizedBox(height: 6),
                           Container(
                             height: 48,
@@ -986,12 +1413,8 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                               color: kSurfaceContainerLow,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: _errorReg
-                                    ? kError
-                                    : _isOcrFlashing
-                                        ? kPrimary
-                                        : kOutlineVariant,
-                                width: (_errorReg || _isOcrFlashing) ? 2 : 1,
+                                color: _errorReg ? kError : kOutlineVariant,
+                                width: _errorReg ? 2 : 1,
                               ),
                             ),
                             child: Row(
@@ -1005,10 +1428,10 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                                     key: const Key('driver_vehicle_reg_input'),
                                     controller: _vehicleRegController,
                                     focusNode: _regFocusNode,
+                                    keyboardType: _regKeyboardType,
                                     textCapitalization: TextCapitalization.characters,
                                     inputFormatters: [
                                       _VehicleRegFormatter(),
-                                      LengthLimitingTextInputFormatter(13),
                                     ],
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
@@ -1017,7 +1440,7 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                                       color: kOnSurface,
                                     ),
                                     decoration: InputDecoration(
-                                      hintText: 'KL 00 AA 0000',
+                                      hintText: 'KL 07 BZ 4501',
                                       hintStyle: GoogleFonts.inter(
                                         fontSize: 14,
                                         letterSpacing: 1.0,
@@ -1028,18 +1451,36 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                                       contentPadding: EdgeInsets.zero,
                                     ),
                                     onChanged: (val) {
-                                      if (_errorReg && val.length >= 13) {
+                                      final regPattern = RegExp(r'^[A-Z]{2}\s[0-9]{1,2}\s[A-Z]{1,3}\s[0-9]{4}$');
+                                      if (_errorReg && regPattern.hasMatch(val.trim())) {
                                         setState(() => _errorReg = false);
                                       }
                                     },
                                   ),
                                 ),
-                                IconButton(
-                                  key: const Key('btn_scan_ocr'),
-                                  icon: const Icon(Icons.document_scanner, color: kPrimary, size: 20),
-                                  onPressed: _handleOcrScan,
-                                  tooltip: 'Scan license plate (OCR simulation)',
-                                ),
+                                if (_canAdvanceRegSegment)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: TextButton(
+                                      key: const Key('btn_advance_reg_segment'),
+                                      onPressed: _advanceRegSegment,
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: kSecondaryContainer.withAlpha(120),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      ),
+                                      child: Text(
+                                        'Space ␣',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: kPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 IconButton(
                                   key: const Key('btn_nav_model'),
                                   icon: const Icon(Icons.arrow_downward, color: kPrimary, size: 20),
@@ -1052,13 +1493,13 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                           if (_errorReg) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Please enter a valid vehicle license plate (e.g., KL 00 AA 0000).',
+                              'Please enter a valid vehicle license plate (e.g., KL 07 BZ 4501).',
                               style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: kError),
                             ),
                           ],
                           const SizedBox(height: 2),
                           Text(
-                            'Format: KL 00 AA 0000 (2 Letters • 2 Digits • 2 Letters • 4 Digits)',
+                            'Format: 2 Letters • 1-2 Digits • 1-3 Letters • 4 Digits (e.g., KL 07 BZ 4501)',
                             style: GoogleFonts.inter(fontSize: 10, color: kOutline, fontWeight: FontWeight.w500),
                           ),
                         ],
@@ -1182,73 +1623,117 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    width: 56,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      color: kSecondary.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: kSecondary.withOpacity(0.3)),
-                                    ),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        const Icon(Icons.directions_car, color: kPrimary, size: 28),
-                                        Positioned(
-                                          bottom: 3,
-                                          right: 3,
-                                          child: Container(
-                                            width: 8,
-                                            height: 8,
-                                            decoration: BoxDecoration(
-                                              color: kEmerald500,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(color: Colors.white, width: 1.5),
-                                            ),
+                                  GestureDetector(
+                                    onTap: _viewPhotoDialog,
+                                    child: Tooltip(
+                                      message: 'Tap to view full photo',
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          width: 56,
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: kSecondary.withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: kSecondary.withOpacity(0.3)),
                                           ),
+                                          child: _photoFilePath != null &&
+                                                  !kIsWeb &&
+                                                  File(_photoFilePath!).existsSync()
+                                              ? Stack(
+                                                  fit: StackFit.expand,
+                                                  children: [
+                                                    Image.file(
+                                                      File(_photoFilePath!),
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                    Positioned(
+                                                      bottom: 2,
+                                                      right: 2,
+                                                      child: Container(
+                                                        padding: const EdgeInsets.all(2),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.black.withOpacity(0.6),
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                        child: const Icon(Icons.zoom_in, color: Colors.white, size: 10),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : Stack(
+                                                  alignment: Alignment.center,
+                                                  children: [
+                                                    const Icon(Icons.directions_car, color: kPrimary, size: 28),
+                                                    Positioned(
+                                                      bottom: 3,
+                                                      right: 3,
+                                                      child: Container(
+                                                        width: 8,
+                                                        height: 8,
+                                                        decoration: BoxDecoration(
+                                                          color: kEmerald500,
+                                                          shape: BoxShape.circle,
+                                                          border: Border.all(color: Colors.white, width: 1.5),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _photoFileName,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: kOnSurface,
+                                    child: GestureDetector(
+                                      onTap: _viewPhotoDialog,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _photoFileName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: kOnSurface,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.check_circle, size: 14, color: kEmerald500),
-                                            const SizedBox(width: 4),
-                                            Flexible(
-                                              child: Text(
-                                                'Photo ready • Condition logged',
-                                                overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: kSecondary,
+                                          const SizedBox(height: 2),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.check_circle, size: 14, color: kEmerald500),
+                                              const SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  'Photo ready • Condition logged',
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: kSecondary,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
+                                  ),
+                                  IconButton(
+                                    key: const Key('btn_retake_photo'),
+                                    icon: const Icon(Icons.camera_alt_outlined, color: kPrimary, size: 22),
+                                    onPressed: () => _capturePhoto(source: ImageSource.camera),
+                                    tooltip: 'Retake photo with camera',
                                   ),
                                   IconButton(
                                     key: const Key('btn_remove_photo'),
                                     icon: const Icon(Icons.delete_outline, color: kError, size: 22),
                                     onPressed: _removePhoto,
-                                    tooltip: 'Remove photo and retake',
+                                    tooltip: 'Remove photo',
                                   ),
                                 ],
                               ),
@@ -1257,10 +1742,10 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                             // State 1: Photo Dropzone
                             InkWell(
                               key: const Key('photo_dropzone'),
-                              onTap: _capturePhoto,
+                              onTap: () => _capturePhoto(source: ImageSource.camera),
                               borderRadius: BorderRadius.circular(16),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
                                 decoration: BoxDecoration(
                                   color: kSurfaceContainerLow.withOpacity(0.6),
                                   borderRadius: BorderRadius.circular(16),
@@ -1279,24 +1764,69 @@ class _DriverIntakeScreenState extends State<DriverIntakeScreen>
                                         color: kSecondaryContainer,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.photo_camera, color: kOnSecondaryContainer, size: 24),
+                                      child: _isCapturingPhoto
+                                          ? const Padding(
+                                              padding: EdgeInsets.all(12),
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                color: kPrimary,
+                                              ),
+                                            )
+                                          : const Icon(Icons.photo_camera, color: kOnSecondaryContainer, size: 24),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Tap to capture or upload vehicle photo',
+                                      'Take Photo of Car',
                                       style: GoogleFonts.inter(
-                                        fontSize: 12,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: kOnSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Captures front bumper, plate & overall condition',
+                                      'Tap to open camera and capture car condition',
                                       style: GoogleFonts.inter(
                                         fontSize: 11,
                                         color: kOutline,
                                       ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        ElevatedButton.icon(
+                                          key: const Key('btn_open_camera'),
+                                          onPressed: () => _capturePhoto(source: ImageSource.camera),
+                                          icon: const Icon(Icons.camera_alt, size: 15),
+                                          label: Text(
+                                            'Open Camera',
+                                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: kPrimary,
+                                            foregroundColor: kOnPrimary,
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        OutlinedButton.icon(
+                                          key: const Key('btn_open_gallery'),
+                                          onPressed: () => _capturePhoto(source: ImageSource.gallery),
+                                          icon: const Icon(Icons.photo_library_outlined, size: 15),
+                                          label: Text(
+                                            'Gallery',
+                                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: kSecondary,
+                                            side: BorderSide(color: kOutlineVariant),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

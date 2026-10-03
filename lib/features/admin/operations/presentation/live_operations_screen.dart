@@ -49,6 +49,9 @@ class _LiveOperationsScreenState extends ConsumerState<LiveOperationsScreen> {
         ref.read(selectedSiteProvider.notifier).state =
             'All Sites (${SiteManager.instance.siteCount} Properties)';
       }
+    } else {
+      ref.read(selectedSiteProvider.notifier).state =
+          'All Sites (${SiteManager.instance.siteCount} Properties)';
     }
   }
 

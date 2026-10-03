@@ -31,7 +31,7 @@ typedef DashboardScreen = HomeScreen;
 
 class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
   String _activeTimeRange = 'today';
-  String _selectedLocation = 'No Site Configured';
+  String _selectedLocation = 'All Sites';
 
   @override
   void initState() {
@@ -66,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         _selectedLocation = 'All Sites (${manager.siteCount} Properties)';
       }
     } else {
-      _selectedLocation = 'No Site Configured';
+      _selectedLocation = 'All Sites (0 Properties)';
     }
   }
 

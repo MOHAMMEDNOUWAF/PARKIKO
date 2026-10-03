@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/services/firebase_service.dart';
 import '../../../core/widgets/parkiko_logo.dart';
 import '../../auth/models/user_profile.dart';
@@ -63,6 +64,8 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
   @override
   void initState() {
     super.initState();
+    _isKeysAccepted = widget.intake.status == 'waiting_for_parking' ||
+        widget.intake.status == 'parked';
     final digits = widget.intake.id.replaceAll(RegExp(r'[^0-9]'), '');
     final cleanDigits = digits.length >= 3
         ? digits.substring(digits.length - 3)
@@ -70,19 +73,46 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
     _keyTag = '#KT-$cleanDigits';
   }
 
-  void _toggleKeyCustody() {
+  void _acceptKeyCustody() {
+    // One-click: once keys are accepted, it cannot be toggled back
+    if (_isKeysAccepted) return;
+
     setState(() {
-      _isKeysAccepted = !_isKeysAccepted;
+      _isKeysAccepted = true;
     });
 
-    if (_isKeysAccepted) {
-      _logKeyCustodyRecord(KeyStatus.keyReceived);
-      _showToast(
-        title: 'Physical Keys Tagged & Custody Recorded',
-        body: 'Key $_keyTag confirmed accepted by driver. Ready for vehicle drop-off.',
-        isSuccess: true,
+    // 1. Silently save details to database and set status to waiting_for_parking
+    // (Only saved to database/screens after driver clicks "Keys Accepted")
+    final alreadyExists = DriverService.instance.intakes.any((i) => i.id == widget.intake.id);
+    if (alreadyExists) {
+      DriverService.instance.updateIntakeStatus(
+        widget.intake.id,
+        'waiting_for_parking',
+        extraData: {
+          'keyTag': _keyTag,
+          'keyStatus': 'key_received',
+          'keyCustodyAccepted': true,
+          'keyAcceptedAt': DateTime.now().toIso8601String(),
+        },
+      );
+    } else {
+      final acceptedIntake = widget.intake.copyWith(
+        status: 'waiting_for_parking',
+        keyTag: _keyTag,
+      );
+      DriverService.instance.submitIntake(
+        acceptedIntake,
+        organizationId: widget.driverProfile?.organizationId ?? 'default_org',
+        locationId: widget.intake.siteName,
       );
     }
+
+    _logKeyCustodyRecord(KeyStatus.keyReceived);
+    _showToast(
+      title: 'Physical Keys Tagged & Custody Recorded',
+      body: 'Parking receipt ready for ${_formatPhone(widget.intake.customerPhone)}. Key $_keyTag confirmed accepted.',
+      isSuccess: true,
+    );
   }
 
   Future<void> _logKeyCustodyRecord(KeyStatus status) async {
@@ -179,28 +209,60 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
   }
 
   Future<void> _handleCompleteIntake() async {
-    if (!_isKeysAccepted) {
-      _showToast(
-        title: 'Physical Keys Required',
-        body: 'Please tap "Keys Accepted" to verify possession of key fob $_keyTag before finalizing intake.',
-      );
-      return;
-    }
-
     setState(() {
       _isFinalizing = true;
+      _isKeysAccepted = true;
     });
 
     try {
-      // 1. Confirm ticket state to PARKED
-      await TicketRepository.instance.confirmVehicleParked(
-        ticketId: widget.intake.id,
-        valetId: widget.driverProfile?.userId ?? widget.intake.driverId,
-        locationSlot: 'Valet Porch Intake',
-      );
-
-      // 2. Log final key custody
+      // 1. Log key custody
       await _logKeyCustodyRecord(KeyStatus.keyStored);
+
+      // 2. Update intake status to 'parked' in DriverService (updates local reactive stream & Firestore)
+      final alreadySubmitted = DriverService.instance.intakes.any((i) => i.id == widget.intake.id);
+      if (!alreadySubmitted) {
+        final parkedIntake = widget.intake.copyWith(
+          status: 'parked',
+          keyTag: _keyTag,
+        );
+        await DriverService.instance.submitIntake(
+          parkedIntake,
+          organizationId: widget.driverProfile?.organizationId ?? 'default_org',
+          locationId: widget.intake.siteName,
+        );
+      } else {
+        await DriverService.instance.updateIntakeStatus(
+          widget.intake.id,
+          'parked',
+          extraData: {
+            'customerName': widget.intake.customerName,
+            'customerPhone': widget.intake.customerPhone,
+            'vehicleReg': widget.intake.vehicleReg,
+            'vehicleModel': widget.intake.vehicleModel,
+            'driverId': widget.driverProfile?.userId ?? widget.intake.driverId,
+            'driverName': widget.driverProfile?.name ?? widget.intake.driverName,
+            'siteName': widget.intake.siteName,
+            'keyTag': _keyTag,
+            'keyStatus': 'key_stored',
+            'parkedAt': DateTime.now().toIso8601String(),
+            'locationSlot': 'Valet Deck B1',
+          },
+        );
+      }
+
+      // 3. Confirm ticket state to PARKED in TicketRepository
+      try {
+        await TicketRepository.instance.confirmVehicleParked(
+          ticketId: widget.intake.id,
+          valetId: widget.driverProfile?.userId ?? widget.intake.driverId,
+          locationSlot: 'Valet Deck B1',
+        );
+      } catch (e) {
+        debugPrint('[DriverKeyHandover] TicketRepository confirm notice: $e');
+      }
+
+      // Notify parent callback that intake completed
+      widget.onCompleted?.call();
     } catch (e) {
       debugPrint('[DriverKeyHandover] Complete intake error: $e');
     }
@@ -211,6 +273,12 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
       _isFinalizing = false;
       _isComplete = true;
     });
+
+    _showToast(
+      title: 'Vehicle Parked & Intake Completed',
+      body: 'Status updated to Parked on Manager & Assistant Manager screens.',
+      isSuccess: true,
+    );
   }
 
   Future<void> _confirmCancelIntake() async {
@@ -220,7 +288,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
         backgroundColor: kSurfaceContainerLowest,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Cancel / Delete Intake?',
+          'Delete Intake?',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: kOnSurface,
@@ -304,23 +372,28 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, color: kOnSurface, size: 20),
           onPressed: () => Navigator.pop(context, false),
         ),
-        title: Row(
-          children: [
-            const ParkikoLogo(size: 24),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Vehicle Slot & Key Handover',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: kOnSurface,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        title: Text(
+          'Vehicle Slot & Key Handover',
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: kOnSurface,
+          ),
         ),
+        actions: [
+          IconButton(
+            key: const Key('btn_appbar_delete_intake'),
+            icon: const Icon(Icons.delete_outline, color: kError, size: 22),
+            tooltip: 'Delete / Undo Intake',
+            onPressed: _confirmCancelIntake,
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: Center(
+              child: ParkikoLogo(size: 28),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -820,25 +893,25 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Key Status Interactive Toggle Button
+          // Key Status Interactive Button (One-click action)
           InkWell(
             key: const Key('key_status_toggle'),
-            onTap: _toggleKeyCustody,
+            onTap: _isKeysAccepted ? null : _acceptKeyCustody,
             borderRadius: BorderRadius.circular(12),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
               decoration: BoxDecoration(
-                color: _isKeysAccepted ? Colors.white : kPrimary,
+                color: _isKeysAccepted ? const Color(0xFFD1FAE5) : kPrimary,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: kPrimary,
+                  color: _isKeysAccepted ? const Color(0xFF059669) : kPrimary,
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: kPrimary.withAlpha(_isKeysAccepted ? 20 : 50),
+                    color: kPrimary.withAlpha(_isKeysAccepted ? 15 : 50),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -850,7 +923,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                 children: [
                   Icon(
                     _isKeysAccepted ? Icons.check_circle : Icons.vpn_key_outlined,
-                    color: _isKeysAccepted ? kPrimary : Colors.white,
+                    color: _isKeysAccepted ? const Color(0xFF065F46) : Colors.white,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -862,7 +935,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: _isKeysAccepted ? kPrimary : Colors.white,
+                        color: _isKeysAccepted ? const Color(0xFF065F46) : Colors.white,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -873,7 +946,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Sub-item 1: WhatsApp Receipt
+          // Sub-item 1: Parking Receipt
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -890,7 +963,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                     color: const Color(0xFFD1FAE5),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.chat, color: Color(0xFF065F46), size: 16),
+                  child: const Icon(Icons.receipt_long, color: Color(0xFF065F46), size: 16),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -901,7 +974,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              'WhatsApp Receipt & E-Pass',
+                              'Parking Receipt & E-Pass',
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -918,7 +991,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'SENT',
+                              _isKeysAccepted ? 'ISSUED' : 'READY',
                               style: GoogleFonts.inter(
                                 fontSize: 8,
                                 fontWeight: FontWeight.w800,
@@ -930,7 +1003,7 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Delivered to ${_formatPhone(widget.intake.customerPhone)} • Token ${widget.ticketNumber.replaceAll('BILL #', '')}',
+                        'Ticket ${widget.ticketNumber} • ${widget.intake.customerName}',
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           color: kOnSurfaceVariant,
@@ -940,7 +1013,11 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
                     ],
                   ),
                 ),
-                const Icon(Icons.verified, color: kPrimary, size: 16),
+                Icon(
+                  _isKeysAccepted ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: _isKeysAccepted ? kPrimary : kOutlineVariant,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -1141,14 +1218,14 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Cancel / Delete Intake Button
+        // Delete / Undo Intake Button
         SizedBox(
-          height: 44,
+          height: 46,
           child: OutlinedButton.icon(
             key: const Key('btn_delete_intake'),
             style: OutlinedButton.styleFrom(
               foregroundColor: kError,
-              side: BorderSide(color: kError.withAlpha(80)),
+              side: BorderSide(color: kError.withAlpha(120), width: 1.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -1156,10 +1233,10 @@ class _DriverKeyHandoverScreenState extends State<DriverKeyHandoverScreen> {
             onPressed: _confirmCancelIntake,
             icon: const Icon(Icons.delete_outline, size: 18),
             label: Text(
-              'Cancel / Delete Intake',
+              'Delete / Remove Intake',
               style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

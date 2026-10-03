@@ -260,7 +260,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     constraints: const BoxConstraints(),
                     tooltip: 'Go back',
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   const ParkikoLogo(size: 26),
                   const SizedBox(width: 8),
                   Flexible(

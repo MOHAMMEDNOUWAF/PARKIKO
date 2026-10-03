@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/services/firebase_service.dart';
 
 /// Represents an individual payment transaction collected by a Manager.
 class ManagerPaymentRecord {
@@ -23,6 +26,39 @@ class ManagerPaymentRecord {
     required this.siteName,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'vehicleName': vehicleName,
+        'plateNumber': plateNumber,
+        'amount': amount,
+        'mode': mode,
+        'driverName': driverName,
+        'driverStaffId': driverStaffId,
+        'siteName': siteName,
+        'timestamp': Timestamp.fromDate(timestamp),
+      };
+
+  factory ManagerPaymentRecord.fromMap(Map<String, dynamic> map, [String? docId]) {
+    DateTime parseDate(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+      return DateTime.now();
+    }
+
+    return ManagerPaymentRecord(
+      id: (docId != null && docId.isNotEmpty) ? docId : (map['id'] as String? ?? ''),
+      vehicleName: map['vehicleName'] as String? ?? '',
+      plateNumber: map['plateNumber'] as String? ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      mode: map['mode'] as String? ?? 'cash',
+      driverName: map['driverName'] as String? ?? '',
+      driverStaffId: map['driverStaffId'] as String? ?? '',
+      siteName: map['siteName'] as String? ?? '',
+      timestamp: parseDate(map['timestamp']),
+    );
+  }
 }
 
 /// Filtered slice of payment metrics for a specified time range or date.
@@ -54,15 +90,129 @@ class FilteredPaymentStats {
 /// Both ManagerDashboardScreen (writer) and Admin PaymentsScreen (reader) use this.
 class ManagerPaymentStats extends ChangeNotifier {
   ManagerPaymentStats._() {
-    _seedInitialRecords();
+    _initFirestoreSync();
   }
   static final instance = ManagerPaymentStats._();
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _firestoreSubscription;
 
   int _cashCount = 0;
   int _onlineCount = 0;
   double _cashRevenue = 0.0;
   double _onlineRevenue = 0.0;
   final List<ManagerPaymentRecord> _records = [];
+
+  void _initFirestoreSync() {
+    try {
+      _firestoreSubscription = FirebaseFirestore.instance
+          .collection(FirebaseService.paymentsCollection)
+          .snapshots()
+          .listen(
+        (snapshot) {
+          if (snapshot.docs.isNotEmpty) {
+            for (final doc in snapshot.docs) {
+              final remote = ManagerPaymentRecord.fromMap(doc.data(), doc.id);
+              final idx = _records.indexWhere((r) => r.id == remote.id);
+              if (idx != -1) {
+                _records[idx] = remote;
+              } else {
+                _records.add(remote);
+              }
+            }
+            _recalculateTotals();
+            notifyListeners();
+          }
+        },
+        onError: (e) {
+          debugPrint('[ManagerPaymentStats] Firestore sync notice: $e');
+        },
+      );
+    } catch (e) {
+      debugPrint('[ManagerPaymentStats] Firestore offline: $e');
+    }
+  }
+
+  void _recalculateTotals() {
+    int cCount = 0;
+    int oCount = 0;
+    double cRev = 0.0;
+    double oRev = 0.0;
+
+    for (final r in _records) {
+      if (r.mode == 'cash') {
+        cCount++;
+        cRev += r.amount;
+      } else {
+        oCount++;
+        oRev += r.amount;
+      }
+    }
+
+    _cashCount = cCount;
+    _onlineCount = oCount;
+    _cashRevenue = cRev;
+    _onlineRevenue = oRev;
+  }
+
+  /// Canonical site comparison accounting for suffixes like '• Valet Desk', '• Deck B1', etc.
+  static bool isMatchingSite(String recordSite, String targetSite) {
+    final rec = recordSite.trim().toLowerCase();
+    final target = targetSite.trim().toLowerCase();
+
+    if (target.isEmpty || target.startsWith('all sites') || target == 'no site selected') {
+      return true;
+    }
+    if (rec.isEmpty) {
+      return false;
+    }
+    if (rec == target) {
+      return true;
+    }
+
+    String clean(String s) => s
+        .toLowerCase()
+        .replaceAll('• valet desk', '')
+        .replaceAll('valet desk', '')
+        .replaceAll('• deck b1', '')
+        .replaceAll('deck b1', '')
+        .replaceAll('& convention', '')
+        .replaceAll(RegExp(r'[^a-z0-9]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    final cRec = clean(rec);
+    final cTarget = clean(target);
+
+    if (cRec.isEmpty || cTarget.isEmpty) {
+      return false;
+    }
+    if (cRec == cTarget) {
+      return true;
+    }
+    if (cRec.contains(cTarget) || cTarget.contains(cRec)) {
+      return true;
+    }
+
+    // Check first word if long enough (e.g. 'Aster', 'Phoenix', 'Aerocity')
+    final wordsRec = cRec.split(' ');
+    final wordsTarget = cTarget.split(' ');
+    if (wordsRec.isNotEmpty && wordsTarget.isNotEmpty) {
+      if (wordsRec.first.length >= 4 && wordsRec.first == wordsTarget.first) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void clear() {
+    _cashCount = 0;
+    _onlineCount = 0;
+    _cashRevenue = 0.0;
+    _onlineRevenue = 0.0;
+    _records.clear();
+    notifyListeners();
+  }
 
   int get cashCount => _cashCount;
   int get onlineCount => _onlineCount;
@@ -82,7 +232,8 @@ class ManagerPaymentStats extends ChangeNotifier {
 
   List<ManagerPaymentRecord> get records => List.unmodifiable(_records);
 
-  void _seedInitialRecords() {
+  /// Seeds demo transaction records if explicitly requested.
+  void seedForDemo() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -313,14 +464,7 @@ class ManagerPaymentStats extends ChangeNotifier {
         siteName.isNotEmpty &&
         !siteName.startsWith('All Sites') &&
         siteName != 'No Site Selected') {
-      final cleanSite = siteName.toLowerCase().trim();
-      filtered = filtered.where((r) {
-        final rSite = r.siteName.toLowerCase().trim();
-        return rSite.isEmpty ||
-            rSite == cleanSite ||
-            cleanSite.contains(rSite) ||
-            rSite.contains(cleanSite);
-      }).toList();
+      filtered = filtered.where((r) => isMatchingSite(r.siteName, siteName)).toList();
     }
 
     if (selectedDate != null) {
@@ -394,8 +538,9 @@ class ManagerPaymentStats extends ChangeNotifier {
     String driverStaffId = '',
     String siteName = '',
   }) {
+    final cleanReg = plateNumber.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
     final record = ManagerPaymentRecord(
-      id: 'PAY-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'PAY-${DateTime.now().millisecondsSinceEpoch}${cleanReg.isNotEmpty ? "-$cleanReg" : ""}',
       vehicleName: vehicleName,
       plateNumber: plateNumber,
       amount: amount,
@@ -417,6 +562,37 @@ class ManagerPaymentStats extends ChangeNotifier {
     }
 
     notifyListeners();
+    _saveToFirestore(record);
+  }
+
+  Future<void> _saveToFirestore(ManagerPaymentRecord record) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection(FirebaseService.paymentsCollection)
+          .doc(record.id)
+          .set(record.toMap());
+      debugPrint('[ManagerPaymentStats] Payment ${record.id} synced to Firestore.');
+    } catch (e) {
+      debugPrint('[ManagerPaymentStats] Firestore write notice (offline or test): $e');
+    }
+  }
+
+  /// Finds an existing payment record for a given vehicle by intakeId or plate number (normalized).
+  ManagerPaymentRecord? findPaymentForVehicle(String vehicleId, String plateNumber) {
+    String clean(String s) => s.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+    final cleanTargetPlate = clean(plateNumber);
+    final cleanTargetId = clean(vehicleId);
+
+    for (final r in _records.reversed) {
+      if (vehicleId.isNotEmpty && (r.id == vehicleId || clean(r.id).contains(cleanTargetId))) {
+        return r;
+      }
+      final cleanRecPlate = clean(r.plateNumber);
+      if (cleanTargetPlate.isNotEmpty && cleanRecPlate == cleanTargetPlate) {
+        return r;
+      }
+    }
+    return null;
   }
 
   /// Resets stats (useful for tests or clearing data).
@@ -427,5 +603,11 @@ class ManagerPaymentStats extends ChangeNotifier {
     _onlineRevenue = 0.0;
     _records.clear();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _firestoreSubscription?.cancel();
+    super.dispose();
   }
 }

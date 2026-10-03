@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/services/firebase_service.dart';
+import '../../../../core/services/customer_retention_service.dart';
 import '../../../../core/widgets/hud_chip.dart';
 import '../models/valet_ticket.dart';
 import 'audit_repository.dart';
@@ -57,6 +58,7 @@ class TicketRepository {
     } else {
       _inMemoryTickets.add(ticket);
     }
+    _pruneExpiredTickets();
     _inMemoryController.add(List.unmodifiable(_inMemoryTickets));
 
     if (FirebaseService.isInitialized) {
@@ -652,6 +654,14 @@ class TicketRepository {
             t.staffId == valetId;
       }).toList();
     });
+  }
+
+  /// Prunes in-memory tickets older than the 90-day retention window.
+  void _pruneExpiredTickets() {
+    final cutoff = CustomerRetentionService.cutoffDate;
+    _inMemoryTickets.removeWhere((t) =>
+        (t.createdAt != null && t.createdAt!.isBefore(cutoff)) ||
+        t.checkInTime.isBefore(cutoff));
   }
 
   /// Resets in-memory storage (used by unit tests).

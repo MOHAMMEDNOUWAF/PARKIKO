@@ -109,8 +109,8 @@ class PaymentsScreen extends StatefulWidget {
 }
 
 class _PaymentsScreenState extends State<PaymentsScreen> {
-  String _currentSite = 'No Site Selected';
-  String _currentPeriod = 'Last 30 Days';
+  String _currentSite = 'All Sites';
+  String _currentPeriod = 'Today';
   DateTime? _selectedDate;
   int? _selectedBarIndex;
   String _sortCriteria = 'rev'; // 'rev' or 'volume'
@@ -244,7 +244,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       }
       _updateSiteHubs();
     } else {
-      _currentSite = 'No Site Selected';
+      _currentSite = 'All Sites (0 Properties)';
       _siteDatasets.clear();
       _siteHubs.clear();
     }
@@ -267,10 +267,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           ? ((siteCars / s.totalBays) * 100).clamp(0, 100).round()
           : 0;
 
+      final cashPart = siteStats.cashCount > 0 ? ' • ₹${siteStats.cashRevenue.toInt()} Cash' : '';
       _siteHubs.add(SiteHubPerformance(
         name: s.name,
         revenue: '₹${siteRev.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-        carsText: '$siteCars cars (${s.totalBays} Bays)',
+        carsText: '$siteCars cars$cashPart (${s.totalBays} Bays)',
         capacityPct: capPct,
         dotColor: colors[i % colors.length],
       ));
@@ -326,11 +327,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   void _clearSingleDate() {
     setState(() {
       _selectedDate = null;
-      _currentPeriod = 'Last 30 Days';
+      _currentPeriod = 'Today';
       _selectedBarIndex = null;
       _updateSiteHubs();
     });
-    _showToast('Returned to Last 30 Days overview', Icons.refresh);
+    _showToast('Returned to Today overview', Icons.refresh);
   }
 
   void _selectSite(String site) {
@@ -365,6 +366,138 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   // --- MODALS ---
+  void _openCashCollectionsModal(FilteredPaymentStats filteredStats, String siteTitle) {
+    final cashRecords = filteredStats.records.where((r) => r.mode == 'cash').toList();
+    if (cashRecords.isEmpty) {
+      _showToast('No cash collections recorded yet for $siteTitle', Icons.attach_money);
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainerLowest,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.outlineVariant.withAlpha(150),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cash Collections Ledger',
+                            style: AppTypography.titleMedium.copyWith(
+                              color: AppColors.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$siteTitle • ₹${filteredStats.cashRevenue.toInt()} total (${cashRecords.length} collections)',
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.outline),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: cashRecords.length,
+                    separatorBuilder: (context, index) => const Divider(height: 12),
+                    itemBuilder: (_, index) {
+                      final rec = cashRecords[index];
+                      final timeStr = '${rec.timestamp.hour.toString().padLeft(2, '0')}:${rec.timestamp.minute.toString().padLeft(2, '0')}';
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer.withAlpha(50),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.payments, color: AppColors.primary, size: 20),
+                        ),
+                        title: Text(
+                          rec.plateNumber,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                        ),
+                        subtitle: Text(
+                          '${rec.vehicleName.isNotEmpty ? rec.vehicleName : "Valet Guest"} • Driver: ${rec.driverName.isNotEmpty ? rec.driverName : "Runner"} • $timeStr',
+                          style: TextStyle(fontSize: 11, color: AppColors.outline),
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '₹${rec.amount.toInt()}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondaryContainer,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'CASH',
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _openSiteSelectorModal() {
     showModalBottomSheet(
       context: context,
@@ -1302,7 +1435,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       multiplier = dayWeights[dayIndex.clamp(0, 6)];
     }
 
-    final activeSiteName = SiteManager.instance.selectedSite;
+    final activeSiteName = _currentSite.startsWith('All Sites')
+        ? 'All Sites'
+        : (SiteManager.instance.selectedSite.startsWith('All Sites')
+            ? _currentSite
+            : SiteManager.instance.selectedSite);
     final paymentStats = ManagerPaymentStats.instance;
     final filteredStats = paymentStats.getFilteredStats(
       period: _currentPeriod,
@@ -1338,26 +1475,28 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           children: [
             const ParkikoLogo(size: 30),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Reports & Financials',
-                  style: AppTypography.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    fontSize: 18,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Reports & Financials',
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 18,
+                    ),
                   ),
-                ),
-                Text(
-                  'Multi-Site Valet Revenue & Analytics',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 11,
+                  Text(
+                    'Multi-Site Valet Revenue & Analytics',
+                    style: AppTypography.labelSmall.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -1509,7 +1648,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                         IconButton(
                           key: const Key('btn_clear_day_report'),
                           icon: const Icon(Icons.close, size: 18, color: AppColors.onSurfaceVariant),
-                          tooltip: 'Clear day report and return to 30 days',
+                          tooltip: 'Clear day report and return to today',
                           onPressed: _clearSingleDate,
                         ),
                       ],
@@ -1783,7 +1922,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
 
                       // Cash Channel
                       InkWell(
-                        onTap: () => _showToast('Cash: Desk physical count verified by Manager', Icons.attach_money),
+                        onTap: () => _openCashCollectionsModal(filteredStats, activeSiteName),
                         borderRadius: BorderRadius.circular(10),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),

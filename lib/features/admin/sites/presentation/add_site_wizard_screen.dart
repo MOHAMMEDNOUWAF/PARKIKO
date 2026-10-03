@@ -318,43 +318,40 @@ class _AddNewSiteScreenState extends State<AddNewSiteScreen> {
           onPressed: () => Navigator.maybePop(context),
           tooltip: 'Back to Multi-Site Settings',
         ),
-        title: const Row(
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ParkikoLogo(size: 28),
-            SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add New Site',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF141E1A),
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  SizedBox(height: 1),
-                  Text(
-                    'Multi-Site Valet Onboarding',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF6F7A73),
-                    ),
-                  ),
-                ],
+            Text(
+              'Add New Site',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF141E1A),
+                letterSpacing: -0.2,
+              ),
+            ),
+            SizedBox(height: 1),
+            Text(
+              'Multi-Site Valet Onboarding',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF6F7A73),
               ),
             ),
           ],
         ),
         actions: [
+          const Center(
+            child: ParkikoLogo(size: 28),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.help_outline, color: Color(0xFF6F7A73)),
             onPressed: _openHelpDialog,
             tooltip: 'Support & Onboarding Help',
           ),
+          const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),

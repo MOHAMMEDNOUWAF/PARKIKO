@@ -1,14 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parkiko/features/admin/staff/models/staff_model.dart';
+import 'package:parkiko/features/admin/staff/services/staff_manager.dart';
 import 'package:parkiko/features/managers/assistant manager/assistant_manager.dart';
 
 void main() {
   group('Assistant Manager Screen Tests', () {
-    testWidgets('Renders all header elements, metrics, urgent & parked vehicles faithfully',
+    testWidgets('AssistantManagerScreen defaults to clean empty state without hardcoded cards',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: AssistantManagerScreen(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Verifies clean Deck Clear state for unified single listing
+      expect(find.text('Deck Clear • No Parked Vehicles'), findsOneWidget);
+      expect(
+        find.text('Parked vehicles and customer retrieval requests will appear here in real time.'),
+        findsOneWidget,
+      );
+      expect(find.text('Audi A6 TFSI Matrix'), findsNothing);
+      expect(find.text('Hyundai Ioniq 5 EV'), findsNothing);
+    });
+
+    testWidgets('Renders unified PARKED VEHICLES listing and site info when seeded',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AssistantManagerScreen(seedDemoData: true),
         ),
       );
       await tester.pump();
@@ -20,116 +42,110 @@ void main() {
       expect(find.text('Grand Hyatt • Deck B1'), findsOneWidget);
       expect(find.text('Deck Live'), findsOneWidget);
 
-      // 3 Metrics
-      expect(find.text('Retrievals'), findsOneWidget);
-      expect(find.text('2 Urgent'), findsOneWidget);
-      expect(find.text('Parked'), findsOneWidget);
-      expect(find.text('14 Ready'), findsOneWidget);
-      expect(find.text('Runners'), findsOneWidget);
-      expect(find.text('5 Idle'), findsOneWidget);
+      // Single listing header
+      expect(find.textContaining('PARKED VEHICLES'), findsOneWidget);
 
-      // Section 1: Urgent
-      expect(find.text('URGENT RETRIEVALS (2)'), findsOneWidget);
-      expect(find.text('Avg wait: 02:10s'), findsOneWidget);
+      // Retrieval requested vehicles appear first
       expect(find.text('BMW X5 xDrive40i'), findsOneWidget);
-      expect(find.text('MH 01 DX 4022'), findsOneWidget);
       expect(find.text('Mercedes GLC 300'), findsOneWidget);
-      expect(find.text('DL 01 AA 7700'), findsOneWidget);
 
-      // Section 2: Parked
-      expect(find.text('PARKED BY DRIVER (READY)'), findsOneWidget);
-      expect(find.text('14 Total Bayed'), findsOneWidget);
+      // Parked vehicles in the single listing
       expect(find.text('Audi A6 TFSI Matrix'), findsOneWidget);
       expect(find.text('KA 03 MX 9012'), findsOneWidget);
       expect(find.text('Hyundai Ioniq 5 EV'), findsOneWidget);
-      expect(find.text('EV Charging'), findsOneWidget);
+      expect(find.text('MH 12 TC 5500'), findsOneWidget);
 
       // Bottom Navigation
       expect(find.text('Retrieval & Dispatch'), findsOneWidget);
       expect(find.text('History'), findsOneWidget);
     });
 
-    testWidgets('Quick chip selection updates runner input and enables dispatch button',
+    testWidgets('Initiating retrieval makes card come FIRST and displays elapsed retrieval timer',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: AssistantManagerScreen(),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Initially dispatch button is disabled with prompt
-      expect(find.text('Enter Runner to Dispatch'), findsWidgets);
-
-      // Tap Quick runner chip 'PK-108 (Rohan)'
-      final rohanChip = find.text('PK-108 (Rohan)').first;
-      await tester.tap(rohanChip);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Button updates to active emerald state with runner ID
-      expect(find.text('Dispatch Runner PK-108'), findsOneWidget);
-
-      // Tap dispatch
-      await tester.tap(find.text('Dispatch Runner PK-108'));
-      await tester.pump();
-
-      // Toast appears
-      expect(find.textContaining('Runner PK-108 dispatched!'), findsOneWidget);
-
-      // BMW X5 should now be removed from urgent queue
-      expect(find.text('BMW X5 xDrive40i'), findsNothing);
-      expect(find.text('URGENT RETRIEVALS (1)'), findsOneWidget);
-
-      // Wait for auto-transition to History tab
-      await tester.pump(const Duration(milliseconds: 1000));
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // Should be on History view
-      expect(find.text('DISPATCHED & COMPLETED LOG'), findsOneWidget);
-      expect(find.text('BMW X5 xDrive40i'), findsOneWidget);
-      expect(find.text('Runner: '), findsWidgets);
-    });
-
-    testWidgets('Triggering retrieval from parked list adds item to urgent queue',
-        (WidgetTester tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.physicalSize = const Size(800, 2000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(
         const MaterialApp(
-          home: AssistantManagerScreen(),
+          home: AssistantManagerScreen(seedDemoData: true),
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('URGENT RETRIEVALS (2)'), findsOneWidget);
+      // Initially 2 retrieval requested cards and 2 parked cards
+      expect(find.textContaining('RETRIEVAL INITIATED'), findsNWidgets(2));
+      expect(find.text('PARKED & SECURED'), findsNWidgets(2));
 
-      // Find Trigger Retrieval on Audi A6 and ensure visible
-      final triggerBtns = find.text('Trigger Retrieval');
-      expect(triggerBtns, findsWidgets);
-      await tester.ensureVisible(triggerBtns.first);
+      // Tap 'Initiate Vehicle Retrieval' on Audi A6
+      final retrieveBtn = find.text('Initiate Vehicle Retrieval').first;
+      await tester.ensureVisible(retrieveBtn);
+      await tester.tap(retrieveBtn);
       await tester.pump();
 
-      await tester.tap(triggerBtns.first);
-      await tester.pump();
+      // Now 3 cards have RETRIEVAL INITIATED alert and elapsed timer
+      expect(find.textContaining('⏱️ RETRIEVAL INITIATED'), findsNWidgets(3));
 
-      // Toast appears
-      expect(
-        find.textContaining('Retrieval requested! Adding Audi A6'),
-        findsOneWidget,
+      // Ticking timer updates elapsed seconds
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('RETRIEVAL INITIATED'), findsNWidgets(3));
+    });
+
+    testWidgets('Allows selecting driver by ID for respected site and dispatching',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      StaffManager.instance.clearStaff();
+      StaffManager.instance.addStaff(
+        const StaffModel(
+          id: '108',
+          name: 'Rohan Sharma',
+          phone: '+91 98765 10800',
+          role: 'driver',
+          assignedSite: 'Grand Hyatt • Deck B1',
+          password: '1234',
+        ),
       );
 
-      // Wait for delay
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AssistantManagerScreen(
+            assignedSite: 'Grand Hyatt • Deck B1',
+            seedDemoData: true,
+          ),
+        ),
+      );
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Urgent queue count incremented to 3
-      expect(find.text('URGENT RETRIEVALS (3)'), findsOneWidget);
-      expect(find.text('Bay Call'), findsOneWidget);
+      // Quick ID chip for driver 108 on the first retrieval card
+      final chip108 = find.textContaining('ID: 108').first;
+      await tester.ensureVisible(chip108);
+      await tester.tap(chip108);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Dispatch button updates to show driver ID
+      final dispatchBtn = find.text('Dispatch Runner [ID: 108] to Bay').first;
+      await tester.ensureVisible(dispatchBtn);
+      expect(dispatchBtn, findsOneWidget);
+
+      // Tap dispatch
+      await tester.tap(dispatchBtn);
+      await tester.pump();
+
+      // Toast confirms dispatch
+      expect(find.textContaining('Runner PK-108 dispatched!'), findsOneWidget);
+
+      // Wait for auto-transition to History tab
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // History tab is now visible
+      expect(find.text('DISPATCHED & COMPLETED LOG'), findsOneWidget);
     });
 
     testWidgets('Tapping logout button shows confirmation dialog and fires onLogout callback',
@@ -182,6 +198,64 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(loggedOut, isTrue);
+    });
+
+    testWidgets('Only shows same-site drivers in driver selector by ID',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      StaffManager.instance.clearStaff();
+      StaffManager.instance.addStaff(
+        const StaffModel(
+          id: '108',
+          name: 'Rahul V.',
+          phone: '+91 98765 43210',
+          role: 'driver',
+          assignedSite: 'Grand Hyatt • Deck B1',
+          password: '1234',
+        ),
+      );
+      StaffManager.instance.addStaff(
+        const StaffModel(
+          id: '082',
+          name: 'Farhan K.',
+          phone: '+91 98765 08200',
+          role: 'driver',
+          assignedSite: 'Grand Hyatt • Deck B1',
+          password: '1234',
+        ),
+      );
+      StaffManager.instance.addStaff(
+        const StaffModel(
+          id: '044',
+          name: 'Amit S.',
+          phone: '+91 98765 04400',
+          role: 'driver',
+          assignedSite: 'Terminal 2 • Valet Desk',
+          password: '1234',
+        ),
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AssistantManagerScreen(
+            assignedSite: 'Grand Hyatt • Deck B1',
+            seedDemoData: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Quick chips should include same site drivers (108 and 082)
+      expect(find.textContaining('108'), findsWidgets);
+      expect(find.textContaining('082'), findsWidgets);
+
+      // Different site driver (044 / Amit) must NOT appear in quick chips
+      expect(find.textContaining('Amit'), findsNothing);
+      expect(find.textContaining('044'), findsNothing);
     });
   });
 }

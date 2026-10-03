@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/parkiko_logo.dart';
 import '../../drivers/models/vehicle_intake_model.dart';
 import '../../drivers/services/driver_service.dart';
 import '../../admin/sites/services/site_manager.dart';
 import '../../admin/staff/models/staff_model.dart';
+import '../../../core/widgets/parkiko_logo.dart';
 
 /// Entry point for the Parkiko Manager - Today's Completed Valet History Screen.
 /// Production-grade Flutter Material 3 implementation conforming strictly to
@@ -109,105 +109,8 @@ class _ManagerHistoryScreenState extends State<ManagerHistoryScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
-  // Completed Valet Records for Today (seeded with default completed runs)
-  final List<CompletedValetRecord> _completedRecords = [
-    const CompletedValetRecord(
-      ticketId: 'PK-9941-T2',
-      vehicleName: 'BMW X5 xDrive',
-      plateNumber: 'MH 01 DX 4022',
-      customerName: 'Aditya Oberoi',
-      customerPhone: '+91 98201 44521',
-      driverName: 'Rahul Verma',
-      driverStaffId: 'ST-108',
-      tariffAmount: 250.0,
-      paymentMode: 'online',
-      intakeTime: '13:10 IST',
-      retrievalTime: '15:45 IST',
-      duration: '2h 35m',
-      bayLocation: 'Deck B1 • Slot #14',
-      transactionRef: 'UPI-4920194821',
-    ),
-    const CompletedValetRecord(
-      ticketId: 'PK-9940-T2',
-      vehicleName: 'Audi Q7 Prestige',
-      plateNumber: 'DL 03 CA 9918',
-      customerName: 'Rohan Malhotra',
-      customerPhone: '+91 97112 88394',
-      driverName: 'Vikram Singh',
-      driverStaffId: 'ST-082',
-      tariffAmount: 300.0,
-      paymentMode: 'cash',
-      intakeTime: '12:30 IST',
-      retrievalTime: '15:20 IST',
-      duration: '2h 50m',
-      bayLocation: 'Deck B1 • Slot #08',
-      transactionRef: 'CSH-REC-8841',
-    ),
-    const CompletedValetRecord(
-      ticketId: 'PK-9938-T2',
-      vehicleName: 'Mercedes-Benz E-Class',
-      plateNumber: 'MH 02 BG 3311',
-      customerName: 'Priya Sundaram',
-      customerPhone: '+91 98920 61120',
-      driverName: 'Tanmay Sharma',
-      driverStaffId: 'ST-044',
-      tariffAmount: 250.0,
-      paymentMode: 'online',
-      intakeTime: '11:45 IST',
-      retrievalTime: '14:50 IST',
-      duration: '3h 05m',
-      bayLocation: 'Deck B1 • Slot #22',
-      transactionRef: 'UPI-9018472910',
-    ),
-    const CompletedValetRecord(
-      ticketId: 'PK-9935-T2',
-      vehicleName: 'Toyota Fortuner Legender',
-      plateNumber: 'KA 05 MN 1092',
-      customerName: 'Sanjay Reddy',
-      customerPhone: '+91 94480 23190',
-      driverName: 'Amit Kumar',
-      driverStaffId: 'ST-044',
-      tariffAmount: 250.0,
-      paymentMode: 'online',
-      intakeTime: '10:15 IST',
-      retrievalTime: '14:10 IST',
-      duration: '3h 55m',
-      bayLocation: 'Deck B1 • Slot #31',
-      transactionRef: 'UPI-3920194883',
-    ),
-    const CompletedValetRecord(
-      ticketId: 'PK-9931-T2',
-      vehicleName: 'Range Rover Velar',
-      plateNumber: 'DL 01 AA 7700',
-      customerName: 'Kunal Kapoor',
-      customerPhone: '+91 98100 22910',
-      driverName: 'Deepak Joshi',
-      driverStaffId: 'ST-019',
-      tariffAmount: 500.0,
-      paymentMode: 'cash',
-      intakeTime: '09:20 IST',
-      retrievalTime: '13:40 IST',
-      duration: '4h 20m',
-      bayLocation: 'Deck B1 • Slot #03',
-      transactionRef: 'CSH-REC-8839',
-    ),
-    const CompletedValetRecord(
-      ticketId: 'PK-9928-T2',
-      vehicleName: 'Porsche Macan GTS',
-      plateNumber: 'MH 12 QP 5544',
-      customerName: 'Meera Singhania',
-      customerPhone: '+91 98230 88412',
-      driverName: 'Rahul Verma',
-      driverStaffId: 'ST-108',
-      tariffAmount: 300.0,
-      paymentMode: 'online',
-      intakeTime: '08:45 IST',
-      retrievalTime: '12:30 IST',
-      duration: '3h 45m',
-      bayLocation: 'Deck B1 • Slot #19',
-      transactionRef: 'UPI-8849102834',
-    ),
-  ];
+  // Completed Valet Records for Today (synced dynamically with live completed runs)
+  final List<CompletedValetRecord> _completedRecords = [];
 
   @override
   void initState() {
@@ -241,7 +144,7 @@ class _ManagerHistoryScreenState extends State<ManagerHistoryScreen> {
               customerPhone: intake.customerPhone.isNotEmpty ? intake.customerPhone : '+91 98000 00000',
               driverName: intake.driverName.isNotEmpty ? intake.driverName : 'Valet Driver',
               driverStaffId: intake.driverId.isNotEmpty ? intake.driverId : 'DRV-01',
-              tariffAmount: 250.0,
+              tariffAmount: _getTariffForSite(intake.siteName),
               paymentMode: 'online',
               intakeTime: '${intake.createdAt.hour.toString().padLeft(2, '0')}:${intake.createdAt.minute.toString().padLeft(2, '0')} IST',
               retrievalTime: 'Just now',
@@ -253,6 +156,94 @@ class _ManagerHistoryScreenState extends State<ManagerHistoryScreen> {
         }
       }
     }
+  }
+
+  /// Resolves the valet tariff amount directly from the Admin's site configuration.
+  double _getTariffForSite([String? siteCandidate]) {
+    final sites = SiteManager.instance.sites;
+
+    String clean(String s) => s
+        .toLowerCase()
+        .replaceAll('• valet desk', '')
+        .replaceAll('valet desk', '')
+        .replaceAll('• deck b1', '')
+        .replaceAll('deck b1', '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // 1. Check candidate from intake
+    if (siteCandidate != null && siteCandidate.trim().isNotEmpty) {
+      final target = siteCandidate.trim();
+      final targetClean = clean(target);
+
+      for (final site in sites) {
+        if (site.name.trim() == target || site.id.trim() == target) {
+          return site.baseFee;
+        }
+      }
+
+      for (final site in sites) {
+        if (site.name.trim().toLowerCase() == target.toLowerCase()) {
+          return site.baseFee;
+        }
+      }
+
+      if (targetClean.isNotEmpty) {
+        for (final site in sites) {
+          final siteClean = clean(site.name);
+          if (siteClean == targetClean ||
+              siteClean.contains(targetClean) ||
+              targetClean.contains(siteClean)) {
+            return site.baseFee;
+          }
+        }
+      }
+    }
+
+    // 2. Check current manager's assigned site
+    final mgrSite = widget.currentManager?.assignedSite;
+    if (mgrSite != null && mgrSite.isNotEmpty && mgrSite != 'All Sites') {
+      final mgrClean = clean(mgrSite);
+      for (final site in sites) {
+        final siteClean = clean(site.name);
+        if (site.name.toLowerCase() == mgrSite.toLowerCase() ||
+            (siteClean.isNotEmpty &&
+                (siteClean == mgrClean ||
+                    siteClean.contains(mgrClean) ||
+                    mgrClean.contains(siteClean)))) {
+          return site.baseFee;
+        }
+      }
+    }
+
+    // 3. Check current dashboard active site name
+    final currentSite = _currentSiteName;
+    if (currentSite.isNotEmpty && currentSite != 'All Sites') {
+      final curClean = clean(currentSite);
+      for (final site in sites) {
+        final siteClean = clean(site.name);
+        if (site.name.toLowerCase() == currentSite.toLowerCase() ||
+            (siteClean.isNotEmpty &&
+                (siteClean == curClean ||
+                    siteClean.contains(curClean) ||
+                    curClean.contains(siteClean)))) {
+          return site.baseFee;
+        }
+      }
+    }
+
+    // 4. Try current selected site model in SiteManager
+    final currentModel = SiteManager.instance.currentSiteModel;
+    if (currentModel != null) {
+      return currentModel.baseFee;
+    }
+
+    // 5. If sites list is non-empty, use the first configured site's base fee
+    if (sites.isNotEmpty) {
+      return sites.first.baseFee;
+    }
+
+    return 250.0;
   }
 
   String get _currentSiteName {
@@ -496,7 +487,7 @@ class _ManagerHistoryScreenState extends State<ManagerHistoryScreen> {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('WhatsApp receipt re-sent to ${record.customerPhone}'),
+                              content: Text('Parking receipt shared with ${record.customerPhone}'),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: const Color(0xFF00513A),
                             ),
@@ -1382,16 +1373,7 @@ class _ManagerHistoryScreenState extends State<ManagerHistoryScreen> {
               ),
               child: Row(
                 children: [
-                  Text(
-                    'P',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: _activeNavIndex == 0
-                          ? const Color(0xFF00513A)
-                          : const Color(0xFF6F7A73),
-                    ),
-                  ),
+                  const ParkikoLogo(size: 16),
                   const SizedBox(width: 8),
                   Text(
                     'Home',

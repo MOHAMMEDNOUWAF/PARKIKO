@@ -11,8 +11,25 @@ class VehicleIntakeModel {
   final String driverId;
   final String driverName;
   final String siteName;
-  final String status; // 'intake_registered', 'parked', 'retrieval_requested', 'completed'
+  final String status; // 'intake_registered', 'waiting_for_parking', 'parked', 'retrieval_requested', 'completed'
   final DateTime createdAt;
+  final String? keyTag;
+  final String paymentStatus; // 'unpaid', 'paid_cash', 'paid_online'
+  final String paymentMode; // 'cash', 'online', or ''
+  final double? paymentAmount;
+  final DateTime? paidAt;
+  final DateTime? retrievalRequestedAt;
+  final String? assignedDriverId;
+  final String? assignedDriverName;
+
+  bool get isPaid =>
+      paymentStatus == 'paid_cash' ||
+      paymentStatus == 'paid_online' ||
+      status == 'completed' ||
+      status == 'retrieved';
+
+  bool get isUnpaid => !isPaid;
+  bool get isRetrievalRequested => status == 'retrieval_requested';
 
   const VehicleIntakeModel({
     required this.id,
@@ -26,6 +43,14 @@ class VehicleIntakeModel {
     required this.siteName,
     this.status = 'intake_registered',
     required this.createdAt,
+    this.keyTag,
+    this.paymentStatus = 'unpaid',
+    this.paymentMode = '',
+    this.paymentAmount,
+    this.paidAt,
+    this.retrievalRequestedAt,
+    this.assignedDriverId,
+    this.assignedDriverName,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +66,15 @@ class VehicleIntakeModel {
       'siteName': siteName,
       'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
+      if (keyTag != null) 'keyTag': keyTag,
+      'paymentStatus': paymentStatus,
+      'paymentMode': paymentMode,
+      if (paymentAmount != null) 'paymentAmount': paymentAmount,
+      if (paidAt != null) 'paidAt': Timestamp.fromDate(paidAt!),
+      if (retrievalRequestedAt != null)
+        'retrievalRequestedAt': Timestamp.fromDate(retrievalRequestedAt!),
+      if (assignedDriverId != null) 'assignedDriverId': assignedDriverId,
+      if (assignedDriverName != null) 'assignedDriverName': assignedDriverName,
     };
   }
 
@@ -64,6 +98,16 @@ class VehicleIntakeModel {
       siteName: map['siteName'] as String? ?? 'Terminal 2 • Valet Desk',
       status: map['status'] as String? ?? 'intake_registered',
       createdAt: parseDate(map['createdAt']),
+      keyTag: map['keyTag'] as String?,
+      paymentStatus: map['paymentStatus'] as String? ?? 'unpaid',
+      paymentMode: map['paymentMode'] as String? ?? '',
+      paymentAmount: (map['paymentAmount'] as num?)?.toDouble(),
+      paidAt: map['paidAt'] != null ? parseDate(map['paidAt']) : null,
+      retrievalRequestedAt: map['retrievalRequestedAt'] != null
+          ? parseDate(map['retrievalRequestedAt'])
+          : null,
+      assignedDriverId: map['assignedDriverId'] as String?,
+      assignedDriverName: map['assignedDriverName'] as String?,
     );
   }
 
@@ -79,6 +123,14 @@ class VehicleIntakeModel {
     String? siteName,
     String? status,
     DateTime? createdAt,
+    String? keyTag,
+    String? paymentStatus,
+    String? paymentMode,
+    double? paymentAmount,
+    DateTime? paidAt,
+    DateTime? retrievalRequestedAt,
+    String? assignedDriverId,
+    String? assignedDriverName,
   }) {
     return VehicleIntakeModel(
       id: id ?? this.id,
@@ -92,6 +144,14 @@ class VehicleIntakeModel {
       siteName: siteName ?? this.siteName,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      keyTag: keyTag ?? this.keyTag,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMode: paymentMode ?? this.paymentMode,
+      paymentAmount: paymentAmount ?? this.paymentAmount,
+      paidAt: paidAt ?? this.paidAt,
+      retrievalRequestedAt: retrievalRequestedAt ?? this.retrievalRequestedAt,
+      assignedDriverId: assignedDriverId ?? this.assignedDriverId,
+      assignedDriverName: assignedDriverName ?? this.assignedDriverName,
     );
   }
 }

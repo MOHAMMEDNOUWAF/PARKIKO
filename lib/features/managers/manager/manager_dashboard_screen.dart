@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/widgets/parkiko_logo.dart';
 import '../../drivers/models/vehicle_intake_model.dart';
 import '../../drivers/services/driver_service.dart';
@@ -99,6 +100,8 @@ enum PaymentStatus {
   paidOnline,
   retrieving,
   retrieved,
+  waitingForParking,
+  parked,
 }
 
 class ValetVehicleItem {
@@ -110,6 +113,16 @@ class ValetVehicleItem {
   final String driverStaffId;
   final double tariffAmount;
   PaymentStatus status;
+  final DateTime? intakeTime;
+  final String siteName;
+
+  bool get isPaid =>
+      status == PaymentStatus.paidCash ||
+      status == PaymentStatus.paidOnline ||
+      status == PaymentStatus.retrieving ||
+      status == PaymentStatus.retrieved;
+
+  bool get isUnpaid => !isPaid;
 
   ValetVehicleItem({
     required this.id,
@@ -120,17 +133,23 @@ class ValetVehicleItem {
     required this.driverStaffId,
     required this.tariffAmount,
     this.status = PaymentStatus.unpaid,
+    this.intakeTime,
+    this.siteName = '',
   });
 }
+
+enum VehiclePaymentFilter { all, unpaid, paid }
 
 class ManagerDashboardScreen extends StatefulWidget {
   final StaffModel? currentManager;
   final VoidCallback? onLogout;
+  final bool seedDemoData;
 
   const ManagerDashboardScreen({
     super.key,
     this.currentManager,
     this.onLogout,
+    this.seedDemoData = false,
   });
 
   @override
@@ -140,56 +159,34 @@ class ManagerDashboardScreen extends StatefulWidget {
 class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   int _activeNavIndex = 0; // 0: Home, 1: History
 
+  // Filter state for Paid / Unpaid / All
+  VehiclePaymentFilter _paymentFilter = VehiclePaymentFilter.all;
+
+  // Static persistent map so payment status survives widget rebuilds & stream updates
+  static final Map<String, PaymentStatus> _persistentPaymentStatuses = {};
+
   // Operational metrics
-  int _paidCount = 18;
-  int _activeDrivers = 8;
+  int _activeDrivers = 0;
+
+  static final List<ValetVehicleItem> _sampleVehicles = [];
+
+  int get _paidCount => _vehicles.where((v) => v.isPaid).length;
+
+  int get _unpaidCount => _vehicles.where((v) => v.isUnpaid).length;
+
+  List<ValetVehicleItem> get _filteredVehicles {
+    switch (_paymentFilter) {
+      case VehiclePaymentFilter.paid:
+        return _vehicles.where((v) => v.isPaid).toList();
+      case VehiclePaymentFilter.unpaid:
+        return _vehicles.where((v) => v.isUnpaid).toList();
+      case VehiclePaymentFilter.all:
+        return _vehicles;
+    }
+  }
 
   // Active list of vehicles managed by the deck manager (merged with live driver intakes)
   final List<ValetVehicleItem> _vehicles = [];
-
-  // Default seed vehicles in case driver service has not logged any yet
-  final List<ValetVehicleItem> _sampleVehicles = [
-    ValetVehicleItem(
-      id: 'V-001',
-      vehicleName: 'BMW X5 xDrive',
-      plateNumber: 'MH 01 DX 4022',
-      customerPhone: '+91 98201 44521',
-      driverName: 'Rahul Verma',
-      driverStaffId: 'ST-108',
-      tariffAmount: 250.0,
-      status: PaymentStatus.unpaid,
-    ),
-    ValetVehicleItem(
-      id: 'V-002',
-      vehicleName: 'Audi Q7 Prestige',
-      plateNumber: 'DL 03 CA 9918',
-      customerPhone: '+91 97112 88394',
-      driverName: 'Vikram Singh',
-      driverStaffId: 'ST-082',
-      tariffAmount: 250.0,
-      status: PaymentStatus.unpaid,
-    ),
-    ValetVehicleItem(
-      id: 'V-003',
-      vehicleName: 'Mercedes E-Class',
-      plateNumber: 'MH 02 BG 3311',
-      customerPhone: '+91 98920 61120',
-      driverName: 'Tanmay Sharma',
-      driverStaffId: 'ST-044',
-      tariffAmount: 250.0,
-      status: PaymentStatus.unpaid,
-    ),
-    ValetVehicleItem(
-      id: 'V-004',
-      vehicleName: 'Toyota Fortuner',
-      plateNumber: 'KA 05 MN 1092',
-      customerPhone: '+91 94480 23190',
-      driverName: 'Amit Kumar',
-      driverStaffId: 'ST-044',
-      tariffAmount: 250.0,
-      status: PaymentStatus.unpaid,
-    ),
-  ];
 
   @override
   void initState() {
@@ -198,6 +195,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     DriverService.instance.addListener(_syncWithServices);
     StaffManager.instance.addListener(_syncWithServices);
     SiteManager.instance.addListener(_syncWithServices);
+    ManagerPaymentStats.instance.addListener(_syncWithServices);
   }
 
   @override
@@ -205,6 +203,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     DriverService.instance.removeListener(_syncWithServices);
     StaffManager.instance.removeListener(_syncWithServices);
     SiteManager.instance.removeListener(_syncWithServices);
+    ManagerPaymentStats.instance.removeListener(_syncWithServices);
     super.dispose();
   }
 
@@ -217,7 +216,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
     // 1. Update active driver count
     final onDutyDrivers = staffManager.drivers.where((d) => d.isOnDuty).length;
-    final activeCount = onDutyDrivers > 0 ? onDutyDrivers : 8;
+    final activeCount = onDutyDrivers;
 
     // 2. Build live vehicle items from Driver Service intakes
     final liveIntakes = driverService.intakes;
@@ -228,12 +227,80 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       for (final v in _vehicles) v.id: v.status,
     };
 
+    String cleanPlate(String plate) =>
+        plate.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+
     for (final VehicleIntakeModel intake in liveIntakes) {
-      PaymentStatus st = existingStatuses[intake.id] ?? PaymentStatus.unpaid;
-      if (intake.status == 'retrieval_requested') {
-        st = PaymentStatus.retrieving;
-      } else if (intake.status == 'completed') {
-        st = PaymentStatus.retrieved;
+      final cleanReg = cleanPlate(intake.vehicleReg);
+
+      // 1. Check intake's direct persistent payment status (from Firestore / DriverService)
+      PaymentStatus? st;
+      if (intake.paymentStatus == 'paid_cash' ||
+          (intake.isPaid && intake.paymentMode.toLowerCase() == 'cash')) {
+        st = PaymentStatus.paidCash;
+      } else if (intake.paymentStatus == 'paid_online' ||
+          (intake.isPaid && intake.paymentMode.toLowerCase() == 'online')) {
+        st = PaymentStatus.paidOnline;
+      } else if (intake.isPaid) {
+        st = (intake.paymentMode.toLowerCase() == 'online')
+            ? PaymentStatus.paidOnline
+            : PaymentStatus.paidCash;
+      }
+
+      // 2. Check static persistent cache (by ID or plate)
+      st ??= _persistentPaymentStatuses[intake.id] ??
+          _persistentPaymentStatuses[intake.vehicleReg] ??
+          (cleanReg.isNotEmpty ? _persistentPaymentStatuses[cleanReg] : null) ??
+          existingStatuses[intake.id];
+
+      // 3. Check if a payment was registered in ManagerPaymentStats
+      if (st == null ||
+          (!st.toString().contains('paid') &&
+              st != PaymentStatus.retrieving &&
+              st != PaymentStatus.retrieved)) {
+        final paymentRec = ManagerPaymentStats.instance
+            .findPaymentForVehicle(intake.id, intake.vehicleReg);
+        if (paymentRec != null) {
+          st = (paymentRec.mode.toLowerCase() == 'cash')
+              ? PaymentStatus.paidCash
+              : PaymentStatus.paidOnline;
+        }
+      }
+
+      final wasPaid = st != null &&
+          (st == PaymentStatus.paidCash ||
+              st == PaymentStatus.paidOnline ||
+              st == PaymentStatus.retrieving ||
+              st == PaymentStatus.retrieved);
+
+      if (wasPaid) {
+        // Cache it in persistent map so it's instantly preserved
+        _persistentPaymentStatuses[intake.id] = st;
+        _persistentPaymentStatuses[intake.vehicleReg] = st;
+        if (cleanReg.isNotEmpty) {
+          _persistentPaymentStatuses[cleanReg] = st;
+        }
+
+        // If the intake itself advanced to retrieval or completed, reflect that
+        if (intake.status == 'retrieval_requested') {
+          st = PaymentStatus.retrieving;
+          _persistentPaymentStatuses[intake.id] = st;
+        } else if (intake.status == 'completed') {
+          st = PaymentStatus.retrieved;
+          _persistentPaymentStatuses[intake.id] = st;
+        }
+      } else {
+        if (intake.status == 'parked') {
+          st = PaymentStatus.parked;
+        } else if (intake.status == 'waiting_for_parking') {
+          st = PaymentStatus.waitingForParking;
+        } else if (intake.status == 'retrieval_requested') {
+          st = PaymentStatus.retrieving;
+        } else if (intake.status == 'completed') {
+          st = PaymentStatus.retrieved;
+        } else {
+          st = PaymentStatus.unpaid;
+        }
       }
 
       combined.add(
@@ -244,28 +311,32 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           customerPhone: intake.customerPhone.isNotEmpty ? intake.customerPhone : '+91 98000 00000',
           driverName: intake.driverName.isNotEmpty ? intake.driverName : 'Valet Driver',
           driverStaffId: intake.driverId.isNotEmpty ? intake.driverId : 'DRV-01',
-          tariffAmount: 250.0,
+          tariffAmount: _getTariffForSite(intake.siteName),
           status: st,
+          intakeTime: intake.createdAt,
+          siteName: intake.siteName.isNotEmpty ? intake.siteName : _currentSiteName,
         ),
       );
     }
 
-    // If driver service has no intakes yet, include sample items for testing
-    if (combined.isEmpty) {
+    if (widget.seedDemoData && combined.isEmpty) {
       for (final sample in _sampleVehicles) {
-        final st = existingStatuses[sample.id] ?? sample.status;
-        combined.add(
-          ValetVehicleItem(
+        final existingStatus = existingStatuses[sample.id];
+        if (existingStatus != null) {
+          combined.add(ValetVehicleItem(
             id: sample.id,
             vehicleName: sample.vehicleName,
             plateNumber: sample.plateNumber,
             customerPhone: sample.customerPhone,
             driverName: sample.driverName,
             driverStaffId: sample.driverStaffId,
-            tariffAmount: sample.tariffAmount,
-            status: st,
-          ),
-        );
+            tariffAmount: _getTariffForSite(_currentSiteName),
+            status: existingStatus,
+            intakeTime: sample.intakeTime,
+          ));
+        } else {
+          combined.add(sample);
+        }
       }
     }
 
@@ -276,8 +347,105 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     });
   }
 
-  int get _unpaidCount =>
-      _vehicles.where((v) => v.status == PaymentStatus.unpaid).length;
+  int get _waitingForParkingCount =>
+      _vehicles.where((v) => v.status == PaymentStatus.waitingForParking).length;
+
+  int get _parkedCount =>
+      _vehicles.where((v) => v.status == PaymentStatus.parked).length;
+
+  /// Resolves the valet tariff amount directly from the Admin's site configuration.
+  /// Matches candidate site name (e.g. from intake.siteName), manager's assigned site,
+  /// or currently selected site in [SiteManager.instance.sites].
+  double _getTariffForSite([String? siteCandidate]) {
+    final sites = SiteManager.instance.sites;
+
+    String clean(String s) => s
+        .toLowerCase()
+        .replaceAll('• valet desk', '')
+        .replaceAll('valet desk', '')
+        .replaceAll('• deck b1', '')
+        .replaceAll('deck b1', '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // 1. Check candidate from intake
+    if (siteCandidate != null && siteCandidate.trim().isNotEmpty) {
+      final target = siteCandidate.trim();
+      final targetClean = clean(target);
+
+      // Exact match
+      for (final site in sites) {
+        if (site.name.trim() == target || site.id.trim() == target) {
+          return site.baseFee;
+        }
+      }
+
+      // Case-insensitive match
+      for (final site in sites) {
+        if (site.name.trim().toLowerCase() == target.toLowerCase()) {
+          return site.baseFee;
+        }
+      }
+
+      // Normalized / partial match
+      if (targetClean.isNotEmpty) {
+        for (final site in sites) {
+          final siteClean = clean(site.name);
+          if (siteClean == targetClean ||
+              siteClean.contains(targetClean) ||
+              targetClean.contains(siteClean)) {
+            return site.baseFee;
+          }
+        }
+      }
+    }
+
+    // 2. Check current manager's assigned site (from widget.currentManager)
+    final mgrSite = widget.currentManager?.assignedSite;
+    if (mgrSite != null && mgrSite.isNotEmpty && mgrSite != 'All Sites') {
+      final mgrClean = clean(mgrSite);
+      for (final site in sites) {
+        final siteClean = clean(site.name);
+        if (site.name.toLowerCase() == mgrSite.toLowerCase() ||
+            (siteClean.isNotEmpty &&
+                (siteClean == mgrClean ||
+                    siteClean.contains(mgrClean) ||
+                    mgrClean.contains(siteClean)))) {
+          return site.baseFee;
+        }
+      }
+    }
+
+    // 3. Check current dashboard active site name
+    final currentSite = _currentSiteName;
+    if (currentSite.isNotEmpty && currentSite != 'All Sites') {
+      final curClean = clean(currentSite);
+      for (final site in sites) {
+        final siteClean = clean(site.name);
+        if (site.name.toLowerCase() == currentSite.toLowerCase() ||
+            (siteClean.isNotEmpty &&
+                (siteClean == curClean ||
+                    siteClean.contains(curClean) ||
+                    curClean.contains(siteClean)))) {
+          return site.baseFee;
+        }
+      }
+    }
+
+    // 4. Try current selected site model in SiteManager
+    final currentModel = SiteManager.instance.currentSiteModel;
+    if (currentModel != null) {
+      return currentModel.baseFee;
+    }
+
+    // 5. If sites list is non-empty, use the first configured site's base fee
+    if (sites.isNotEmpty) {
+      return sites.first.baseFee;
+    }
+
+    // Default fallback to standard site tariff
+    return 250.0;
+  }
 
   String get _currentSiteName {
     if (widget.currentManager != null &&
@@ -387,38 +555,45 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDAE5DE),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  vehicle.plateNumber,
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: Color(0xFF141E1A),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDAE5DE),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    vehicle.plateNumber,
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: Color(0xFF141E1A),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Driver: ${vehicle.driverName} (${vehicle.driverStaffId})',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF3F4944),
+                                const SizedBox(height: 4),
+                                Text(
+                                  vehicle.intakeTime != null
+                                      ? 'Driver: ${vehicle.driverName} (${vehicle.driverStaffId}) • Intake: ${DateFormat('hh:mm a').format(vehicle.intakeTime!)}'
+                                      : 'Driver: ${vehicle.driverName} (${vehicle.driverStaffId})',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF3F4944),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
@@ -607,11 +782,19 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   }
 
   void _confirmPayment(ValetVehicleItem vehicle, String mode) {
+    final newStatus =
+        (mode == 'cash') ? PaymentStatus.paidCash : PaymentStatus.paidOnline;
+    final cleanReg = vehicle.plateNumber.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
     setState(() {
-      vehicle.status =
-          (mode == 'cash') ? PaymentStatus.paidCash : PaymentStatus.paidOnline;
-      _paidCount += 1;
+      vehicle.status = newStatus;
+      _persistentPaymentStatuses[vehicle.id] = newStatus;
+      _persistentPaymentStatuses[vehicle.plateNumber] = newStatus;
+      if (cleanReg.isNotEmpty) {
+        _persistentPaymentStatuses[cleanReg] = newStatus;
+      }
     });
+
+    final resolvedSite = vehicle.siteName.isNotEmpty ? vehicle.siteName : _currentSiteName;
 
     ManagerPaymentStats.instance.recordPayment(
       vehicleName: vehicle.vehicleName,
@@ -620,7 +803,27 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       mode: mode,
       driverName: vehicle.driverName,
       driverStaffId: vehicle.driverStaffId,
-      siteName: _currentSiteName,
+      siteName: resolvedSite,
+    );
+
+    // Explicitly update DriverService intake payment model & Firestore
+    DriverService.instance.updateIntakePayment(
+      vehicle.id,
+      paymentMode: mode,
+      amount: vehicle.tariffAmount,
+      siteName: resolvedSite,
+    );
+
+    // Sync payment metadata to DriverService / Firestore
+    DriverService.instance.updateIntakeStatus(
+      vehicle.id,
+      (vehicle.status == PaymentStatus.parked) ? 'parked' : 'waiting_for_parking',
+      extraData: {
+        'paymentMode': mode,
+        'paymentStatus': mode == 'cash' ? 'paid_cash' : 'paid_online',
+        'paymentAmount': vehicle.tariffAmount,
+        'paidSite': resolvedSite,
+      },
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -646,9 +849,24 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   }
 
   void _initiateVehicleRetrieval(ValetVehicleItem vehicle) {
+    final cleanReg = vehicle.plateNumber.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
     setState(() {
       vehicle.status = PaymentStatus.retrieving;
+      _persistentPaymentStatuses[vehicle.id] = PaymentStatus.retrieving;
+      _persistentPaymentStatuses[vehicle.plateNumber] = PaymentStatus.retrieving;
+      if (cleanReg.isNotEmpty) {
+        _persistentPaymentStatuses[cleanReg] = PaymentStatus.retrieving;
+      }
     });
+
+    final reqTime = DateTime.now();
+    DriverService.instance.updateIntakeStatus(
+      vehicle.id,
+      'retrieval_requested',
+      extraData: {
+        'retrievalRequestedAt': reqTime,
+      },
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -813,14 +1031,21 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
                     // 2. Three Metric Counter Tiles (Paid, Unpaid, Active Drivers)
                     _buildMetricTilesRow(),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
+
+                    // 2.5 Filter Tabs (All, Unpaid, Paid)
+                    _buildFilterTabs(),
+                    const SizedBox(height: 4),
 
                     // 3. Section Title Bar
                     _buildSectionHeader(),
                     const SizedBox(height: 10),
 
                     // 4. List of Vehicle Cards with Red/Amber Alert States & Dynamic CTAs
-                    ..._vehicles.map((v) => _buildVehicleCard(v)),
+                    if (_filteredVehicles.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ..._filteredVehicles.map((v) => _buildVehicleCard(v)),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -831,6 +1056,64 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             _buildBottomNav(),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Empty state when no vehicles are active on deck or matching filter
+  Widget _buildEmptyState() {
+    final isFiltered = _paymentFilter != VehiclePaymentFilter.all;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBEC9C2).withAlpha(80)),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          Icon(
+            isFiltered ? Icons.filter_alt_off_outlined : Icons.directions_car_filled_outlined,
+            size: 40,
+            color: const Color(0xFF6F7A73),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            isFiltered
+                ? 'No ${_paymentFilter == VehiclePaymentFilter.paid ? "Paid" : "Unpaid"} Vehicles'
+                : 'No Active Vehicles on Deck',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF141E1A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isFiltered
+                ? 'Tap another filter above or reset to view all vehicles.'
+                : 'Vehicles checked in by drivers will appear here live in real-time.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6F7A73)),
+          ),
+          if (isFiltered) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _paymentFilter = VehiclePaymentFilter.all;
+                });
+              },
+              icon: const Icon(Icons.clear_all, size: 16),
+              label: const Text('Show All Vehicles'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF00513A),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -872,9 +1155,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Sub-level Deck B1 • Auto Allocation Mode',
-                  style: TextStyle(
+                Text(
+                  'Sub-level Deck B1 • ₹${_getTariffForSite(_currentSiteName).toStringAsFixed(0)} Tariff Rate',
+                  style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF6F7A73),
                   ),
@@ -908,155 +1191,254 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  /// 3-Column Metric Tiles: Paid, Unpaid, Active Drivers
+  /// 3-Column Metric Tiles: Paid, Unpaid, Active Drivers (Interactive Filters)
   Widget _buildMetricTilesRow() {
+    final isPaidSelected = _paymentFilter == VehiclePaymentFilter.paid;
+    final isUnpaidSelected = _paymentFilter == VehiclePaymentFilter.unpaid;
+
     return Row(
       children: [
-        // 1. Paid Tile
+        // 1. Paid Tile (Clickable Filter)
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBEC9C2).withAlpha(128)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Paid',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF00513A),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFAFEDD4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        size: 12,
-                        color: Color(0xFF00513A),
-                      ),
-                    ),
-                  ],
+          child: InkWell(
+            key: const Key('tile_filter_paid'),
+            onTap: () {
+              setState(() {
+                _paymentFilter = isPaidSelected
+                    ? VehiclePaymentFilter.all
+                    : VehiclePaymentFilter.paid;
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: isPaidSelected ? const Color(0xFFF1FCF5) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isPaidSelected
+                      ? const Color(0xFF00513A)
+                      : const Color(0xFFBEC9C2).withAlpha(128),
+                  width: isPaidSelected ? 2 : 1,
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$_paidCount',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF00513A),
+                boxShadow: isPaidSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF00513A).withAlpha(25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Paid',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF00513A),
+                            ),
+                          ),
+                          if (isPaidSelected) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00513A),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'ACTIVE',
+                                style: TextStyle(
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'cleared',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF6F7A73),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFAFEDD4),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 12,
+                          color: Color(0xFF00513A),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'All receipts synced',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    color: Color(0xFF00513A),
-                    fontWeight: FontWeight.w500,
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '$_paidCount',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF00513A),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'cleared',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF6F7A73),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPaidSelected ? 'Tap to view all' : 'All receipts synced',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      color: const Color(0xFF00513A),
+                      fontWeight: isPaidSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
         const SizedBox(width: 8),
 
-        // 2. Unpaid Tile (Red Alert Accent)
+        // 2. Unpaid Tile (Red Alert Accent - Clickable Filter)
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFFA4A4)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Unpaid',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFBA1A1A),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFDAD6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.payments,
-                        size: 12,
-                        color: Color(0xFFBA1A1A),
-                      ),
-                    ),
-                  ],
+          child: InkWell(
+            key: const Key('tile_filter_unpaid'),
+            onTap: () {
+              setState(() {
+                _paymentFilter = isUnpaidSelected
+                    ? VehiclePaymentFilter.all
+                    : VehiclePaymentFilter.unpaid;
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUnpaidSelected ? const Color(0xFFFFF8F7) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isUnpaidSelected
+                      ? const Color(0xFFBA1A1A)
+                      : const Color(0xFFFFA4A4),
+                  width: isUnpaidSelected ? 2 : 1,
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$_unpaidCount',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFFBA1A1A),
+                boxShadow: isUnpaidSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFBA1A1A).withAlpha(25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Unpaid',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFBA1A1A),
+                            ),
+                          ),
+                          if (isUnpaidSelected) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFBA1A1A),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'ACTIVE',
+                                style: TextStyle(
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'pending',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFFBA1A1A),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFDAD6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.payments,
+                          size: 12,
+                          color: Color(0xFFBA1A1A),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Awaiting collection',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    color: Color(0xFFBA1A1A),
-                    fontWeight: FontWeight.w500,
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '$_unpaidCount',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFBA1A1A),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'pending',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFFBA1A1A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isUnpaidSelected ? 'Tap to view all' : 'Awaiting collection',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      color: const Color(0xFFBA1A1A),
+                      fontWeight: isUnpaidSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1139,40 +1521,199 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
+  /// Filter tabs above the vehicle card list
+  Widget _buildFilterTabs() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildFilterChip(
+            label: 'All',
+            count: _vehicles.length,
+            isSelected: _paymentFilter == VehiclePaymentFilter.all,
+            onTap: () => setState(() => _paymentFilter = VehiclePaymentFilter.all),
+            selectedColor: const Color(0xFF141E1A),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Unpaid',
+            count: _unpaidCount,
+            isSelected: _paymentFilter == VehiclePaymentFilter.unpaid,
+            onTap: () => setState(() => _paymentFilter = VehiclePaymentFilter.unpaid),
+            selectedColor: const Color(0xFFBA1A1A),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Paid',
+            count: _paidCount,
+            isSelected: _paymentFilter == VehiclePaymentFilter.paid,
+            onTap: () => setState(() => _paymentFilter = VehiclePaymentFilter.paid),
+            selectedColor: const Color(0xFF00513A),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Color selectedColor,
+  }) {
+    return InkWell(
+      key: Key('filter_tab_${label.toLowerCase()}'),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? selectedColor : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? selectedColor : const Color(0xFFBEC9C2).withAlpha(128),
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: selectedColor.withAlpha(30),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF3F4944),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withAlpha(60)
+                    : const Color(0xFFE5F1EA),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : const Color(0xFF00513A),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Section Header with Red/Amber Alert Indicator
   Widget _buildSectionHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Row(
+        Expanded(
+          child: Row(
+            children: [
+              Icon(
+                _parkedCount > 0
+                    ? Icons.local_parking_rounded
+                    : (_waitingForParkingCount > 0 ? Icons.hourglass_top_rounded : Icons.circle),
+                size: _parkedCount > 0 || _waitingForParkingCount > 0 ? 12 : 8,
+                color: _parkedCount > 0
+                    ? const Color(0xFFBA1A1A)
+                    : (_waitingForParkingCount > 0 ? const Color(0xFFD97706) : const Color(0xFFBA1A1A)),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _parkedCount > 0
+                      ? 'PARKED VEHICLES (UNPAID)'
+                      : (_waitingForParkingCount > 0
+                          ? 'ACTIVE INTAKES & PENDING'
+                          : 'UNPAID VEHICLES (PENDING COLLECTION)'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: _parkedCount > 0
+                        ? const Color(0xFFBA1A1A)
+                        : (_waitingForParkingCount > 0 ? const Color(0xFF92400E) : const Color(0xFFBA1A1A)),
+                    letterSpacing: 0.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Wrap(
+          spacing: 6,
           children: [
-            Icon(Icons.circle, size: 8, color: Color(0xFFBA1A1A)),
-            SizedBox(width: 6),
-            Text(
-              'UNPAID VEHICLES (PENDING COLLECTION)',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFFBA1A1A),
-                letterSpacing: 0.3,
+            if (_parkedCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFDAD6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFB4AB)),
+                ),
+                child: Text(
+                  '$_parkedCount Parked',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFBA1A1A),
+                  ),
+                ),
+              ),
+            if (_waitingForParkingCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Text(
+                  '$_waitingForParkingCount Waiting',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFDAD6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$_unpaidCount Pending',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFBA1A1A),
+                ),
               ),
             ),
           ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFDAD6),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            '$_unpaidCount Pending',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFBA1A1A),
-            ),
-          ),
         ),
       ],
     );
@@ -1181,18 +1722,32 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   /// Vehicle Card with Left Indicator Stripe, Required Meta (From Driver Intake), and Dynamic Action Button
   Widget _buildVehicleCard(ValetVehicleItem vehicle) {
     final bool isUnpaid = vehicle.status == PaymentStatus.unpaid;
+    final bool isWaiting = vehicle.status == PaymentStatus.waitingForParking;
+    final bool isParked = vehicle.status == PaymentStatus.parked;
     final bool isRetrieving = vehicle.status == PaymentStatus.retrieving;
+    final bool isPaid = vehicle.status == PaymentStatus.paidCash || vehicle.status == PaymentStatus.paidOnline;
 
-    // Card Colors based on Payment State
-    final Color stripeColor = isUnpaid
+    // Card Colors based on Payment State:
+    // Waiting for parking -> Yellow
+    // Parked (unpaid) or Unpaid -> Red
+    // Paid (Cash/Online) or Retrieving -> Green
+    final Color stripeColor = (isUnpaid || isParked)
         ? const Color(0xFFBA1A1A)
-        : (isRetrieving ? const Color(0xFF00513A) : const Color(0xFFD97706)); // Amber 600
+        : (isWaiting
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFF00513A));
 
-    final Color cardBorderColor = isUnpaid
-        ? const Color(0xFFBEC9C2).withAlpha(128)
-        : const Color(0xFFFCD34D); // Amber 300
+    final Color cardBorderColor = (isUnpaid || isParked)
+        ? const Color(0xFFFFDAD6)
+        : (isWaiting
+            ? const Color(0xFFFDE68A)
+            : (isPaid || isRetrieving ? const Color(0xFFAFEDD4) : const Color(0xFFFCD34D)));
 
-    final Color cardBgColor = isUnpaid ? Colors.white : const Color(0xFFFFFBEB);
+    final Color cardBgColor = (isUnpaid || isParked)
+        ? const Color(0xFFFFF8F7)
+        : (isWaiting
+            ? const Color(0xFFFFFBEB)
+            : const Color(0xFFF1FCF5));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1248,26 +1803,64 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     ),
                     const SizedBox(height: 6),
 
-                    // Row 2: Vehicle License Plate (From Driver)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDAE5DE),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        vehicle.plateNumber,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
-                          color: Color(0xFF141E1A),
+                    // Row 2: Vehicle License Plate & Intake Time
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDAE5DE),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            vehicle.plateNumber,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              letterSpacing: 0.5,
+                              color: Color(0xFF141E1A),
+                            ),
+                          ),
                         ),
-                      ),
+                        if (vehicle.intakeTime != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.schedule_rounded,
+                                  size: 11,
+                                  color: Color(0xFF475569),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Intake: ${DateFormat('hh:mm a').format(vehicle.intakeTime!)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF334155),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
 
@@ -1277,9 +1870,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                         Icon(
                           Icons.phone,
                           size: 14,
-                          color: isUnpaid
+                          color: (isUnpaid || isParked)
                               ? const Color(0xFFBA1A1A)
-                              : const Color(0xFFD97706),
+                              : (isWaiting ? const Color(0xFFD97706) : const Color(0xFF00513A)),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -1287,9 +1880,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isUnpaid
+                            color: (isUnpaid || isParked)
                                 ? const Color(0xFF141E1A)
-                                : const Color(0xFF92400E),
+                                : (isWaiting ? const Color(0xFF92400E) : const Color(0xFF00513A)),
                           ),
                         ),
                       ],
@@ -1342,7 +1935,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  /// Status Badge (Red UNPAID vs Amber PAID vs Green RETRIEVING)
+  /// Status Badge (Red UNPAID/PARKED vs Green PAID vs Green RETRIEVING vs Yellow WAITING)
   Widget _buildStatusBadge(PaymentStatus status) {
     switch (status) {
       case PaymentStatus.unpaid:
@@ -1351,6 +1944,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFFFDAD6),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFFB4AB)),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -1373,20 +1967,21 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFFEF3C7),
+            color: const Color(0xFFD1FAE5),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFAFEDD4)),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.circle, size: 6, color: Color(0xFFD97706)),
+              Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF00513A)),
               SizedBox(width: 4),
               Text(
                 'PAID (CASH)',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF92400E),
+                  color: Color(0xFF00513A),
                 ),
               ),
             ],
@@ -1397,20 +1992,21 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFFEF3C7),
+            color: const Color(0xFFD1FAE5),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFAFEDD4)),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.circle, size: 6, color: Color(0xFFD97706)),
+              Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF00513A)),
               SizedBox(width: 4),
               Text(
                 'PAID (ONLINE)',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF92400E),
+                  color: Color(0xFF00513A),
                 ),
               ),
             ],
@@ -1457,22 +2053,79 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             ),
           ),
         );
+
+      case PaymentStatus.waitingForParking:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF3C7),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.hourglass_top_rounded, size: 9, color: Color(0xFFB45309)),
+              SizedBox(width: 4),
+              Text(
+                'WAITING FOR PARKING',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF92400E),
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case PaymentStatus.parked:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFDAD6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFFB4AB)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.local_parking_rounded, size: 10, color: Color(0xFFBA1A1A)),
+              SizedBox(width: 4),
+              Text(
+                'PARKED',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFBA1A1A),
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        );
     }
   }
 
   /// Dynamic Action Button
-  /// If Unpaid -> "Collect Payment" (Red)
+  /// If Unpaid, WaitingForParking, or Parked -> "Collect Payment"
   /// If Paid -> "Vehicle Retrieval" (Amber/Emerald)
   /// If Retrieving -> "In Delivery Bay" (Disabled/Mint)
   Widget _buildActionButton(ValetVehicleItem vehicle) {
-    if (vehicle.status == PaymentStatus.unpaid) {
+    if (vehicle.status == PaymentStatus.unpaid ||
+        vehicle.status == PaymentStatus.waitingForParking ||
+        vehicle.status == PaymentStatus.parked) {
+      final isWaiting = vehicle.status == PaymentStatus.waitingForParking;
       return ElevatedButton(
         onPressed: () => _showPaymentModal(vehicle),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFBA1A1A), // Red
+          backgroundColor: isWaiting
+              ? const Color(0xFFD97706)
+              : const Color(0xFFBA1A1A),
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -1501,7 +2154,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFD97706), // Amber
+          backgroundColor: const Color(0xFF00513A),
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1581,16 +2234,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               ),
               child: Row(
                 children: [
-                  Text(
-                    'P',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: _activeNavIndex == 0
-                          ? const Color(0xFF00513A)
-                          : const Color(0xFF6F7A73),
-                    ),
-                  ),
+                  const ParkikoLogo(size: 16),
                   const SizedBox(width: 8),
                   Text(
                     'Home',

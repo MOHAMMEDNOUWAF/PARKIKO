@@ -142,6 +142,7 @@ void main() {
       createdAt: DateTime.now(),
     );
     SiteManager.instance.addSite(testSite);
+    SiteManager.instance.selectSite(testSite.name);
 
     await tester.pumpWidget(
       MaterialApp(

@@ -59,6 +59,7 @@ void main() {
         MaterialApp(
           home: ManagerDashboardScreen(
             currentManager: manager,
+            seedDemoData: true,
           ),
         ),
       );

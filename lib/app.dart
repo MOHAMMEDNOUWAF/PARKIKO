@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/parkiko_logo.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/drivers/presentation/driver_intake_screen.dart';
-import 'features/managers/assistant manager/assistant_manager.dart';
+import 'features/managers/assistant manager/assistant_manager_screen.dart';
 import 'features/managers/manager/manager.dart';
 import 'features/admin/navigation/presentation/main_shell_screen.dart';
 import 'features/admin/staff/models/staff_model.dart';
@@ -32,6 +33,18 @@ class ParkikoApp extends ConsumerWidget {
               );
             } else if (profile.isAssistantManager) {
               return AssistantManagerScreen(
+                currentAssistantManager: StaffModel(
+                  id: profile.userId,
+                  name: profile.name,
+                  phone: '',
+                  role: 'assistant manager',
+                  assignedSite: profile.locationIds.isNotEmpty
+                      ? profile.locationIds.first
+                      : 'Grand Hyatt • Deck B1',
+                ),
+                assignedSite: profile.locationIds.isNotEmpty
+                    ? profile.locationIds.first
+                    : 'Grand Hyatt • Deck B1',
                 onLogout: () {
                   ref.read(currentUserProfileProvider.notifier).signOut();
                 },
@@ -72,7 +85,14 @@ class ParkikoApp extends ConsumerWidget {
         loading: () => const Scaffold(
           backgroundColor: AppColors.background,
           body: Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ParkikoLogo(size: 64),
+                SizedBox(height: 24),
+                CircularProgressIndicator(color: AppColors.primary),
+              ],
+            ),
           ),
         ),
         error: (_, _) => LoginScreen(

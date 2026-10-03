@@ -37,4 +37,9 @@ class FirebaseService {
   static const String sitesCollection = 'sites';
   static const String staffCollection = 'staff';
   static const String paymentsCollection = 'payments';
+  static const String intakesCollection = 'valet_intakes';
+  static const String vehicleConditionsCollection = 'vehicle_conditions';
+
+  /// Number of days customer intake, ticket, and vehicle records are retained in the database.
+  static const int customerDataRetentionDays = 90;
 }

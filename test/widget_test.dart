@@ -24,7 +24,9 @@ class MockAuthNotifier extends AuthNotifier {
     required String password,
     bool rememberMe = true,
   }) async {
-    if (identifier.trim().toLowerCase() == 'admin1' && password.trim() == '1234') {
+    final clean = identifier.trim().toLowerCase();
+    if ((clean == 'admin1' || clean == '8041' || clean == 'pk-8041') &&
+        password.trim() == '1234') {
       final profile = UserProfile(
         uid: 'test-admin-uid',
         userId: 'admin1',
@@ -34,8 +36,6 @@ class MockAuthNotifier extends AuthNotifier {
       );
       state = AsyncData(profile);
       return AuthResult.success(profile);
-    } else if (identifier.trim().toLowerCase() != 'admin1') {
-      return AuthResult.failure('Invalid User ID or password.');
     } else {
       return AuthResult.failure('Invalid User ID or password.');
     }
@@ -68,25 +68,25 @@ void main() {
 
     // 1. Verify that LoginScreen renders initial elements
     expect(find.text('Welcome to Parkiko'), findsOneWidget);
-    expect(find.text('Sign In to Terminal'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
 
     // 2. Tap sign in with empty fields - triggers error SnackBar
-    await tester.tap(find.text('Sign In to Terminal'));
+    await tester.tap(find.text('Sign In'));
     await tester.pumpAndSettle();
     expect(find.text('Please enter your Parkiko User ID.'), findsOneWidget);
 
     // 3. Enter incorrect credentials - triggers failure SnackBar
     final textFields = find.byType(TextField);
-    await tester.enterText(textFields.at(0), 'unknown_user');
-    await tester.enterText(textFields.at(1), 'wrong_pass');
-    await tester.tap(find.text('Sign In to Terminal'));
+    await tester.enterText(textFields.at(0), '9999');
+    await tester.enterText(textFields.at(1), '0000');
+    await tester.tap(find.text('Sign In'));
     await tester.pumpAndSettle();
     expect(find.text('Invalid User ID or password.'), findsOneWidget);
 
     // 4. Enter valid test admin credentials - successfully logs in and opens Admin dashboard
-    await tester.enterText(textFields.at(0), 'admin1');
+    await tester.enterText(textFields.at(0), '8041');
     await tester.enterText(textFields.at(1), '1234');
-    await tester.tap(find.text('Sign In to Terminal'));
+    await tester.tap(find.text('Sign In'));
     await tester.pumpAndSettle();
 
     expect(find.text('Parkiko'), findsWidgets);

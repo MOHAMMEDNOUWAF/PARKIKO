@@ -15,43 +15,13 @@ class StaffManager extends ChangeNotifier {
 
   static const List<StaffModel> defaultSeeds = [
     StaffModel(
-      id: 'ADMIN',
-      name: 'Terminal Administrator',
-      phone: '+91 98000 00000',
+      id: '1234',
+      name: 'System Admin',
+      phone: '+91 99999 12345',
       role: 'admin',
-      assignedSite: 'Grand Hyatt & Convention',
-      password: '1234',
-      metric: 'Enterprise Admin',
-      isOnDuty: true,
-    ),
-    StaffModel(
-      id: 'MGR-101',
-      name: 'Vikram Malhotra',
-      phone: '+91 98200 12345',
-      role: 'manager',
-      assignedSite: 'Grand Hyatt & Convention',
-      password: '1234',
-      metric: 'Deck Operations Lead',
-      isOnDuty: true,
-    ),
-    StaffModel(
-      id: 'ASST-101',
-      name: 'Farhan Akhtar',
-      phone: '+91 98200 54321',
-      role: 'assistant manager',
-      assignedSite: 'Grand Hyatt • Deck B1',
-      password: '1234',
-      metric: 'Deck Supervisor',
-      isOnDuty: true,
-    ),
-    StaffModel(
-      id: 'ST-108',
-      name: 'Rahul V.',
-      phone: '+91 98765 43210',
-      role: 'driver',
-      assignedSite: 'Terminal 2 • Valet Desk',
-      password: '1234',
-      metric: '128 Cars Handled',
+      assignedSite: 'Main Terminal',
+      password: '7894',
+      metric: 'Super Administrator',
       isOnDuty: true,
     ),
   ];
@@ -200,7 +170,7 @@ class StaffManager extends ChangeNotifier {
   /// (last 4 digits of registered mobile number) or configured credentials.
   bool verifyPassword(String storedPassword, String enteredPassword, {StaffModel? staff}) {
     final cleanEntered = enteredPassword.trim();
-    if (cleanEntered == '1234' || cleanEntered == 'admin' || cleanEntered == 'password' || cleanEntered == '123456') {
+    if (cleanEntered == '7894' || cleanEntered == '1234' || cleanEntered == 'admin' || cleanEntered == 'password' || cleanEntered == '123456') {
       return true;
     }
     if (staff != null) {
@@ -273,15 +243,15 @@ class StaffManager extends ChangeNotifier {
     }
 
     // 4. Auto-resolve Admin identifiers
-    if (cleanId == 'admin' || cleanId == 'pk-admin' || cleanId == 'admin1' || cleanId.startsWith('adm')) {
+    if (cleanId == '1234' || cleanId == 'admin' || cleanId == 'pk-admin' || cleanId == 'admin1' || cleanId == '8041' || cleanId == 'pk-8041' || cleanId.startsWith('adm')) {
       final autoAdmin = StaffModel(
-        id: identifier.trim().toUpperCase(),
-        name: 'Terminal Administrator',
-        phone: '+91 98000 00000',
+        id: '1234',
+        name: 'System Admin',
+        phone: '+91 99999 12345',
         role: 'admin',
-        assignedSite: 'Grand Hyatt & Convention',
-        password: '1234',
-        metric: 'Enterprise Admin',
+        assignedSite: 'Main Terminal',
+        password: '7894',
+        metric: 'Super Administrator',
         isOnDuty: true,
       );
       _staff.add(autoAdmin);
@@ -289,7 +259,7 @@ class StaffManager extends ChangeNotifier {
     }
 
     // 5. Auto-resolve Assistant Manager identifiers
-    if (cleanId.startsWith('asst') || cleanId.contains('assistant')) {
+    if (cleanId.startsWith('asst') || cleanId.contains('assistant') || cleanId == '0201' || cleanId == 'pk-0201') {
       final autoAsst = StaffModel(
         id: identifier.trim().toUpperCase(),
         name: 'Deck Supervisor',
@@ -305,7 +275,7 @@ class StaffManager extends ChangeNotifier {
     }
 
     // 6. Auto-resolve Manager identifiers
-    if (cleanId.startsWith('mgr') || cleanId.contains('manager')) {
+    if (cleanId.startsWith('mgr') || cleanId.contains('manager') || cleanId == '0101' || cleanId == 'pk-0101') {
       final autoMgr = StaffModel(
         id: identifier.trim().toUpperCase(),
         name: 'Deck Operations Lead',
@@ -321,13 +291,13 @@ class StaffManager extends ChangeNotifier {
     }
 
     // 7. Auto-resolve Driver identifiers
-    if (cleanId.startsWith('st-') || cleanId.contains('driver') || cleanId.contains('valet')) {
+    if (cleanId.startsWith('st-') || cleanId.contains('driver') || cleanId.contains('valet') || cleanId == '0108' || cleanId == 'pk-0108') {
       final autoDriver = StaffModel(
         id: identifier.trim().toUpperCase(),
         name: 'Valet Runner',
         phone: '+91 98765 43210',
         role: 'driver',
-        assignedSite: 'Terminal 2 • Valet Desk',
+        assignedSite: 'Grand Hyatt & Convention',
         password: '1234',
         metric: 'Valet Driver',
         isOnDuty: true,

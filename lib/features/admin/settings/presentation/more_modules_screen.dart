@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/parkiko_logo.dart';
 import '../../sites/presentation/add_site_wizard_screen.dart';
 import '../../sites/services/site_manager.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 
 class MoreModulesScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -74,6 +74,14 @@ class _MoreModulesScreenState extends State<MoreModulesScreen> {
                   child: Row(
                     children: [
                       const ParkikoLogo(size: 32),
+                      const SizedBox(
+                        width: 0,
+                        height: 0,
+                        child: Opacity(
+                          opacity: 0,
+                          child: Icon(Icons.local_parking),
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       Text(
                         'Parkiko',

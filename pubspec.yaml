@@ -42,17 +42,14 @@ dependencies:
   firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.5
   crypto: ^3.0.6
+  image_picker: ^1.2.3
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
 
 dependency_overrides:
   path_provider_foundation: 2.4.1
@@ -70,6 +67,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - assets/icons/parkiko.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -96,3 +94,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/parkiko.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icons/parkiko.png"
+  windows:
+    generate: true
+    image_path: "assets/icons/parkiko.png"
+

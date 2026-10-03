@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_profile.dart';
 import '../services/firebase_auth_service.dart';
+import '../../admin/sites/services/site_manager.dart';
 
 /// State of the active authenticated user profile.
 final currentUserProfileProvider =
@@ -62,6 +63,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
 
   /// Bypasses authentication for debug and automated test environments (Admin).
   void devBypassLogin() {
+    SiteManager.instance.selectSite('All Sites');
     state = const AsyncData(
       UserProfile(
         uid: 'dev-admin-id',

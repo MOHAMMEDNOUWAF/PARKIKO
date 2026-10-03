@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/parkiko_logo.dart';
 import '../../sites/services/site_manager.dart';
+import '../../../../core/widgets/parkiko_logo.dart';
 
 // ── Color tokens matching Design System verbatim ──────────────────────────────
 const _kPrimary = AppColors.primary; // #00513A
@@ -449,28 +449,24 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           onPressed: _handleDismiss,
           tooltip: 'Go Back',
         ),
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ParkikoLogo(size: 28),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add New Staff',
-                    style: _font(18, weight: FontWeight.w700, color: _kOnSurface, letterSpacing: -0.3, height: 1.2),
-                  ),
-                  Text(
-                    'Valet Team Onboarding',
-                    style: _font(11, weight: FontWeight.w500, color: _kOnSurfaceVariant, letterSpacing: 0.2),
-                  ),
-                ],
-              ),
+            Text(
+              'Add New Staff',
+              style: _font(18, weight: FontWeight.w700, color: _kOnSurface, letterSpacing: -0.3, height: 1.2),
+            ),
+            Text(
+              'Valet Team Onboarding',
+              style: _font(11, weight: FontWeight.w500, color: _kOnSurfaceVariant, letterSpacing: 0.2),
             ),
           ],
         ),
         actions: [
+          const Center(
+            child: ParkikoLogo(size: 28),
+          ),
+          const SizedBox(width: 10),
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: InkWell(

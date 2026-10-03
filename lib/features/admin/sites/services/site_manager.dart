@@ -12,22 +12,7 @@ class SiteManager extends ChangeNotifier {
     _initFirestoreSync();
   }
 
-  final List<SiteModel> _sites = [
-    SiteModel(
-      id: 'site-1',
-      name: 'Grand Hyatt & Convention',
-      address: 'BKC Main Avenue, Mumbai',
-      totalBays: 120,
-      createdAt: DateTime.now(),
-    ),
-    SiteModel(
-      id: 'site-2',
-      name: 'Phoenix Palladium Mall',
-      address: 'Lower Parel, Mumbai',
-      totalBays: 85,
-      createdAt: DateTime.now(),
-    ),
-  ];
+  final List<SiteModel> _sites = [];
   String _selectedSite = 'All Sites';
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _firestoreSubscription;
 
@@ -68,9 +53,9 @@ class SiteManager extends ChangeNotifier {
       _sites.add(site);
     }
 
-    // If no specific site was selected yet or this is the first site, select it
-    if (_selectedSite == 'All Sites' || _selectedSite == 'No Site Configured' || _selectedSite == 'No Site Selected') {
-      _selectedSite = site.name;
+    // Maintain 'All Sites' as the primary default operational view
+    if (_selectedSite == 'No Site Configured' || _selectedSite == 'No Site Selected' || _selectedSite.isEmpty) {
+      _selectedSite = 'All Sites';
     }
 
     notifyListeners();
@@ -93,7 +78,7 @@ class SiteManager extends ChangeNotifier {
     );
     _sites.removeWhere((s) => s.id == id);
     if (_selectedSite == removed.name) {
-      _selectedSite = _sites.isNotEmpty ? _sites.first.name : 'All Sites';
+      _selectedSite = 'All Sites';
     }
     notifyListeners();
     _deleteFromFirestore(id);
@@ -136,14 +121,14 @@ class SiteManager extends ChangeNotifier {
             _sites.clear();
             _sites.addAll(remoteSites);
 
-            // Ensure selected site is valid
+            // Ensure selected site is valid, defaulting to 'All Sites'
             if (_selectedSite.isNotEmpty && !_selectedSite.startsWith('All Sites')) {
               final exists = _sites.any((s) => s.name == _selectedSite);
-              if (!exists && _sites.isNotEmpty) {
-                _selectedSite = _sites.first.name;
+              if (!exists) {
+                _selectedSite = 'All Sites';
               }
-            } else if (_sites.isNotEmpty && _selectedSite == 'All Sites') {
-              // keep All Sites
+            } else {
+              _selectedSite = 'All Sites';
             }
             notifyListeners();
           }

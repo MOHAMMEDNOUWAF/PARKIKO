@@ -30,7 +30,7 @@ void main() {
 
       // 2. Active Site Selector Pill
       expect(find.text('ACTIVE OPERATIONS SITE'), findsOneWidget);
-      expect(find.text('No Site Selected'), findsOneWidget);
+      expect(find.textContaining('All Sites'), findsWidgets);
       expect(find.text('Change'), findsOneWidget);
 
       // 3. Time Filter Chips
@@ -47,6 +47,7 @@ void main() {
       expect(find.text('0'), findsOneWidget);
       expect(find.text('Avg. Dwell Time'), findsOneWidget);
       expect(find.text('0h 00m'), findsOneWidget);
+      expect(find.text('Live rate'), findsOneWidget);
       expect(find.text('Collection Rate'), findsOneWidget);
       expect(find.text('0.0%'), findsWidgets);
 
@@ -88,13 +89,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap 'Today' chip
-      await tester.tap(find.byKey(const Key('period_chip_Today')));
-      await tester.pumpAndSettle();
-
-      // Verify scaled values for Today (e.g. dwell time updates to 0h 00m)
+      // Default is Today
       expect(find.text('0h 00m'), findsOneWidget);
       expect(find.text('Live rate'), findsOneWidget);
+
+      // Tap 'Last 7 Days' chip
+      await tester.tap(find.byKey(const Key('period_chip_Last 7 Days')));
+      await tester.pumpAndSettle();
+
+      // Verify timeframe updated
+      expect(find.text('7-Day Total'), findsOneWidget);
     });
 
     testWidgets('Tapping Site Selector opens modal and shows empty state when no sites configured', (WidgetTester tester) async {
